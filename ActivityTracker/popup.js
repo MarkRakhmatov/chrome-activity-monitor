@@ -2,16 +2,16 @@
 
 function ShowStatistics()
 {
-	chrome.runtime.sendMessage(null, "getStatistics", {}, (response) => 
+	chrome.runtime.sendMessage(null, "getStatistics", {}, (response) =>
 	{
 		var table = document.getElementById('statisticsTable');
 		var tbodyRef = table.getElementsByTagName('tbody')[0];
-		var statisticsMap = new Map(Array.from(JSON.parse(response)));
-		for(var [key, value] of statisticsMap)
+		var statisticsMap = JSON.parse(response);
+		for(var key in statisticsMap)
 		{
 			var newRow = tbodyRef.insertRow();
 			newRow.insertCell().appendChild(document.createTextNode(key));
-			newRow.insertCell().appendChild(document.createTextNode(value));
+			newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
 		}
 		table.style.display = "table";
 	});

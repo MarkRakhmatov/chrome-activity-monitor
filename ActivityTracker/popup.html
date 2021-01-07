@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Statistics info</title>
+		<style>
+		.button-container {
+			background: gray;
+			overflow-y: auto;
+			overflow-x: initial;
+			text-align: center;
+			display: flex;
+		}
+		</style>
+	</head>
+	<body>
+		<div class ="button-container" >
+			<button id='Statistics'>Show statistics</button>
+			<button id='Settings'>Settings</button>
+		</div>
+		<table	id="statisticsTable" style="display:none" width="100%" cellpadding="1" cellspacing="0" border="3">
+			<thead>
+				<th>Site</th>
+				<th>Time</th>
+			</thead>
+			<div>
+				<tbody>
+				</tbody>
+			</div>
+		</table>
+	<script src="popup.js"></script>
+	</body>
+</html>

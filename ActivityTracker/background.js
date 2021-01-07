@@ -78,11 +78,6 @@ class Timer {
         this.isActive = false;
     }
 
-    Stop() {
-        this.activeTimeDuration = 0;
-        this.isActive = false;
-    }
-
     UpdateElapsedTimeDuration() {
         if (!this.isActive) {
             return;

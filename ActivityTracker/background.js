@@ -142,7 +142,6 @@ class HostTimeData {
         const deserialized = JSON.parse(serialValue);
         this.timer.fromMilliseconds(deserialized.time);
         this.tabIds.clear();
-        this.tabIds.clear();
     }
 }
 
@@ -350,12 +349,6 @@ function setListeners() {
     chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
         console.log('onRemoved ' + tabId);
         window.statisticsHandler.deactivate(tabId);
-        setDataToStorage(window.statisticsHandler.getMapForSerialization());
-    });
-
-    chrome.runtime.onSuspend.addListener(function () {
-        console.log('onSuspend');
-        updateActiveTabData();
         setDataToStorage(window.statisticsHandler.getMapForSerialization());
     });
 

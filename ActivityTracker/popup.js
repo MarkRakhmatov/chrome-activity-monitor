@@ -39,6 +39,16 @@ function toggleStatistics() {
     isStatDisplayed = !isStatDisplayed;
 }
 
+function openOptions() {
+    if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+    } else {
+        window.open(chrome.runtime.getURL('options.html'));
+    }
+}
+
+//An Alarm delay of less than the minimum 1 minute will fire
+// in approximately 1 minute incriments if released
 document.getElementById('Statistics').addEventListener('click', toggleStatistics);
-// document.getElementById('Settings').addEventListener('click', toggleBadge);
+document.getElementById('Settings').addEventListener('click', openOptions);
 })()

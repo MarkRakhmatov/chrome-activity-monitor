@@ -85,8 +85,8 @@ class Timer {
         return new Duration(this.activeTimeDuration);
     }
 
-    fromMiliseconds(miliseconds) {
-        this.activeTimeDuration = miliseconds;
+    fromMilliseconds(milliseconds) {
+        this.activeTimeDuration = milliseconds;
         this.lastTimePoint = 0;
         this.isActive = false;
     }
@@ -140,7 +140,8 @@ class HostTimeData {
 
     fromJson(serialValue) {
         const deserialized = JSON.parse(serialValue);
-        this.timer.fromMiliseconds(deserialized.time);
+        this.timer.fromMilliseconds(deserialized.time);
+        this.tabIds.clear();
         this.tabIds.clear();
     }
 }
@@ -297,17 +298,16 @@ function getDataFromStorage() {
 function showModal()
 {
     operationOnActiveTab( 
-    (activeTab)=> {
+        (activeTab)=> {
         chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
             if (chrome.runtime.lastError) {
                 console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
             }
-        });
-    },
-    ()=> {
-        console.log('No active tab!');
-    }
-    );
+        }),
+        ()=> {
+            console.log('No active tab!');
+        }
+    });
 }
 
 function onDayChanged() {

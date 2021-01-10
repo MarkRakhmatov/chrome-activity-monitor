@@ -1,3 +1,4 @@
+(function(){
 function getUrlHostname(urlString) {
     return new URL(urlString).hostname;
 }
@@ -148,9 +149,15 @@ class StatisticsHandler {
     constructor() {
         this.hostnameToTimeData = {};
         this.lastHostname = '';
+        this.currentTab = 0;
+        this.isDocumentFocused = true;
     }
 
     updateHostTimeData(hostname, tabId) {
+        if(!this.isDocumentFocused) {
+            console.log('Document is not focused, skip update');
+            return;
+        }
         if (this.lastHostname.length !== 0 && hostname !== this.lastHostname) {
             this.hostnameToTimeData[this.lastHostname].deactivate();
         }
@@ -161,6 +168,7 @@ class StatisticsHandler {
         }
         hostTimeData.activate();
         hostTimeData.addTab(tabId);
+        this.currentTab = tabId;
         this.lastHostname = hostname;
     }
 
@@ -168,9 +176,9 @@ class StatisticsHandler {
         console.log('Deactivate statistics timer for tabId: ' + tabId);
         for (let host in this.hostnameToTimeData) {
             const value = this.hostnameToTimeData[host];
-            console.log('Opened tabs: ' + this.hostnameToTimeData[host].tabIds);
             if (value.tabIds.has(tabId)) {
                 console.log('User closed tab with hostname: ' + host);
+                console.log('Opened tabs: ' + Array.from(this.hostnameToTimeData[host].tabIds).toString());
                 value.deactivate();
                 value.removeTab(tabId);
             }
@@ -187,7 +195,18 @@ class StatisticsHandler {
     deactivateCurrentHost() {
         this.deactivateHost(this.lastHostname);
     }
-
+    setFocusState(focusState, url, tabId) {
+        if(focusState) {
+            this.currentTab = tabId;
+            this.isDocumentFocused = true;
+        }
+        else if(tabId != this.currentTab) {
+            console.log("Skip focus deactivating - tab is not active!");
+        }
+        else {
+            this.isDocumentFocused = false;
+        }
+    }
     getLastHostname(){
         return this.lastHostname;
     }
@@ -238,17 +257,24 @@ function updateStatisticsFromTab(tab) {
     const hostname = getUrlHostname(url);
     window.statisticsHandler.updateHostTimeData(hostname, id);
 }
-
-function updateActiveTabData() {
+function operationOnActiveTab(onActiveTab, onNoActiveTab) {
     chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
-        const currTab = tabs[0];
-        if (!currTab) {
-            console.log('No active tab!');
-            window.statisticsHandler.deactivateCurrentHost();
+        const activeTab = tabs[0];
+        if (!activeTab) {
+            onNoActiveTab();
             return;
         }
-        updateStatisticsFromTab(currTab);
+        onActiveTab(activeTab);
     });
+}
+function updateActiveTabData() {
+    operationOnActiveTab(
+        updateStatisticsFromTab,
+        ()=>{
+            console.log('No active tab!');
+            window.statisticsHandler.deactivateCurrentHost();
+        }
+    );
 }
 
 function setDataToStorage(updatedDataMap) {
@@ -270,20 +296,18 @@ function getDataFromStorage() {
 
 function showModal()
 {
-    chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
-        const currTab = tabs[0];
-        if (!currTab) {
-            console.log('No active tab!');
-            return;
-        }
-        window.communicationPort = chrome.tabs.connect(currTab.id, {name: "contentScriptPort"});
-        window.communicationPort.postMessage({name : "showModal", stat : window.statisticsHandler.getFormattedMap()});
-        chrome.tabs.sendMessage(currTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
+    operationOnActiveTab( 
+    (activeTab)=> {
+        chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
             if (chrome.runtime.lastError) {
                 console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
             }
-        })
-    });
+        });
+    },
+    ()=> {
+        console.log('No active tab!');
+    }
+    );
 }
 
 function onDayChanged() {
@@ -328,11 +352,6 @@ function setListeners() {
         window.statisticsHandler.deactivate(tabId);
         setDataToStorage(window.statisticsHandler.getMapForSerialization());
     });
-    chrome.windows.onFocusChanged.addListener(function (number) {
-        console.log('onFocusChanged: ' + number);  
-        updateActiveTabData();
-        setDataToStorage(window.statisticsHandler.getMapForSerialization());
-    });
 
     chrome.runtime.onSuspend.addListener(function () {
         console.log('onSuspend');
@@ -341,7 +360,22 @@ function setListeners() {
     });
 
     chrome.runtime.onMessage.addListener((message, sender, response) => {
-        if (message === "getStatistics") {
+        if(!message.name) {
+            return;
+        }
+        if(message.name === "blur") {
+            let url = getUrlHostname(message.url);
+            console.log('blur ' + url);
+            window.statisticsHandler.deactivateCurrentHost();
+            window.statisticsHandler.setFocusState(false, url, sender.tab.id);
+        }
+        else if(message.name === "focus") {  
+            let url = getUrlHostname(message.url);    
+            console.log('focus ' + getUrlHostname(message.url));
+            window.statisticsHandler.setFocusState(true, url, sender.tab.id);
+            updateActiveTabData();
+        }
+        else if (message.name === "getStatistics") {
             response(window.statisticsHandler.getFormattedMap());
         }
     });
@@ -355,9 +389,10 @@ function initializeStatistics() {
         updateActiveTabData();
         setDataToStorage(window.statisticsHandler.getMapForSerialization());
         checkDayChange();
-    }, 10000);
+    }, 20000);
     
     setInterval(showModal, 3600*1000);
 }
 
 initializeStatistics();
+})()

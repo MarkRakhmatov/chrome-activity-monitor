@@ -1,7 +1,8 @@
 'use strict';
+(function(){
 let isStatDisplayed = false;
 function showStatistics() {
-    chrome.runtime.sendMessage(null, "getStatistics", {}, (response) =>
+    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) =>
     {
         let table = document.getElementById('statisticsTable');
         let tbodyRef = table.getElementsByTagName('tbody')[0];
@@ -40,4 +41,4 @@ function toggleStatistics() {
 
 document.getElementById('Statistics').addEventListener('click', toggleStatistics);
 // document.getElementById('Settings').addEventListener('click', toggleBadge);
-
+})()

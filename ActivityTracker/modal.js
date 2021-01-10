@@ -1,3 +1,4 @@
+(function(){
 let isStatDisplayed = false;
 
 function showStatistics() {
@@ -73,12 +74,28 @@ function showModal() {
     });
 }
 
-  chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-      console.log("Show statistics!");
-      if (request.name == "showModal") {
-        showModal();
-        sendResponse();
-      }
+let lastFocuseState = true;
+function checkPageFocus() {
+    let message = "focus";
+    let isDocumentFocused = document.hasFocus();
+    if (!isDocumentFocused) {
+        message = "blur";
     }
-  );
+    if(isDocumentFocused != lastFocuseState) {
+        chrome.runtime.sendMessage(null, {name: message, url: document.URL});
+    }
+    lastFocuseState = isDocumentFocused;
+}
+
+setInterval( checkPageFocus, 200 );
+
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if (request.name == "showModal") {
+            console.log("Show statistics!");
+            showModal();
+        }
+        sendResponse();
+    }
+);
+})()

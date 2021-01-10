@@ -58,8 +58,28 @@
         </div>
         <div class="error-container"></div>
     </form>
-    <div id="time-limits"></div>
+    <div id="time-limits">
+        <table>
+            <thead>
+            <tr>
+                <td>Hostname</td>
+                <td>Time Limit</td>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+    </div>
 </div>
 <script src="options.js"></script>
+<template id="settings-table-row-template">
+    <tr class="settings-row">
+        <td class="hostname"></td>
+        <td class="time-limit"></td>
+        <td><button id="remove-hostname">Remove</button></td>
+    </tr>
+</template>
 </body>
 </html>

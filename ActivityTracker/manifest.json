@@ -2,19 +2,22 @@
   "name": "Activity monitor",
   "version": "1.0",
   "description": "User activity monitor!",
-  
+
   "permissions": [
   "tabs",
   "storage",
   "alarms",
   "declarativeContent"],
-  
+
   "background": {
     "scripts": ["background.js"],
 	"persistent": true
   },
   "manifest_version": 2,
-  
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "browser_action": {
     "default_popup": "popup.html",
     "default_icon": {

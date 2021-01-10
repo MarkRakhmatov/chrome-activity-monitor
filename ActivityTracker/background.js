@@ -84,8 +84,8 @@ class Timer {
         return new Duration(this.activeTimeDuration);
     }
 
-    fromMiliseconds(miliseconds) {
-        this.activeTimeDuration = miliseconds;
+    fromMilliseconds(milliseconds) {
+        this.activeTimeDuration = milliseconds;
         this.lastTimePoint = 0;
         this.isActive = false;
     }
@@ -139,7 +139,7 @@ class HostTimeData {
 
     fromJson(serialValue) {
         const deserialized = JSON.parse(serialValue);
-        this.timer.fromMiliseconds(deserialized.time);
+        this.timer.fromMilliseconds(deserialized.time);
 		this.tabIds.clear();
     }
 }
@@ -328,7 +328,7 @@ function setListeners() {
             response(JSON.stringify(hostToTimestamp));
         }
     });
-} 
+}
 
 function onDayChanged() {
     chrome.storage.local.remove('stat', () => {

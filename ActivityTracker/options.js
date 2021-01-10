@@ -17,10 +17,14 @@
         e.preventDefault();
         const formData = new FormData(form);
 
-        saveToStorage({
+        return saveToStorage({
             hostname: formData.get('hostnameValue'),
             time: formData.get('timeValue'),
-        });
+        })
+            .then((savedValue) => {
+                updateUi(savedValue);
+                form.reset();
+            });
     });
 
     function updateUi(timeLimitsData) {
@@ -46,13 +50,11 @@
     function createTableRow(settingsItem) {
         const { hostname, time } = settingsItem;
         const template = document.getElementById('settings-table-row-template');
-        const row = template.content.querySelector('.settings-row');
         const hostnameCell = template.content.querySelector('.hostname');
         const timeCell = template.content.querySelector('.time-limit');
 
         hostnameCell.textContent = hostname;
         timeCell.textContent = time;
-        row.setAttribute('data-hostname', hostname);
 
         return document.importNode(template.content, true);
     }
@@ -83,31 +85,34 @@
     }
 
     function removeHostnameFromStorage(hostname) {
-        chrome.storage.sync.get({ [STORAGE_KEY]: {} }, (oldValue) => {
+        chrome.storage.local.get({ [STORAGE_KEY]: {} }, (oldValue) => {
             const newValue = oldValue[STORAGE_KEY];
             delete newValue[hostname];
-            chrome.storage.sync.set({ [STORAGE_KEY]: newValue }, () => {
+            chrome.storage.local.set({ [STORAGE_KEY]: newValue }, () => {
                 updateUi(newValue);
             });
         });
     }
 
     function renderInitialData() {
-        chrome.storage.sync.get({ [STORAGE_KEY]: {} }, (oldValue) => {
+        chrome.storage.local.get({ [STORAGE_KEY]: {} }, (oldValue) => {
             updateUi(oldValue[STORAGE_KEY]);
         });
     }
 
-    function saveToStorage(hostnameTimeData) {
-        hostnameTimeData = hostnameTimeData ?? {};
-        const { hostname, time } = hostnameTimeData;
-        const timeMs = timeStrToMs(time);
+    async function saveToStorage(hostnameTimeData) {
+        return new Promise((resolve) => {
+            hostnameTimeData = hostnameTimeData ?? {};
+            const { hostname, time } = hostnameTimeData;
+            const timeMs = timeStrToMs(time);
 
-        chrome.storage.sync.get({ [STORAGE_KEY]: {} }, (oldValue) => {
-            const newValue = oldValue[STORAGE_KEY];
-            newValue[hostname] = timeMs;
-            chrome.storage.sync.set({ [STORAGE_KEY]: newValue }, () => {
-                updateUi(newValue);
+            chrome.storage.local.get({ [STORAGE_KEY]: {} }, (oldValue) => {
+                const newValue = oldValue[STORAGE_KEY];
+                newValue[hostname] = timeMs;
+
+                chrome.storage.local.set({ [STORAGE_KEY]: newValue }, () => {
+                    resolve(newValue);
+                });
             });
         });
     }

@@ -140,7 +140,7 @@ class HostTimeData {
     fromJson(serialValue) {
         const deserialized = JSON.parse(serialValue);
         this.timer.fromMiliseconds(deserialized.time);
-		this.tabIds.clear();
+        this.tabIds.clear();
     }
 }
 
@@ -167,7 +167,7 @@ class StatisticsHandler {
     deactivate(tabId) {
         console.log('Deactivate statistics timer for tabId: ' + tabId);
         for (let host in this.hostnameToTimeData) {
-        	const value = this.hostnameToTimeData[host];
+            const value = this.hostnameToTimeData[host];
             console.log('Opened tabs: ' + this.hostnameToTimeData[host].tabIds);
             if (value.tabIds.has(tabId)) {
                 console.log('User closed tab with hostname: ' + host);
@@ -184,13 +184,32 @@ class StatisticsHandler {
             hostTimeData.deactivate();
         }
     }
+    deactivateCurrentHost() {
+        this.deactivateHost(this.lastHostname);
+    }
 
+    getLastHostname(){
+        return this.lastHostname;
+    }
+    getFormattedMap()
+    {
+        let hostToTimestamp = {};
+        const sortedDataMap = window.statisticsHandler.getSortedDataMap();
+        for (let [key, value] of sortedDataMap) {
+            hostToTimestamp[key] = value.getActiveTimeDuration().toString();
+        }
+        return JSON.stringify(hostToTimestamp);
+    }
     getMapForSerialization() {
         let hostnameToJson = {};
         for (let key in this.hostnameToTimeData) {
             hostnameToJson[key] = this.hostnameToTimeData[key].toJson();
         }
         return JSON.stringify(hostnameToJson);
+    }
+    
+    getSortedDataMap() {
+        return Object.entries(this.hostnameToTimeData).sort((a, b) => b[1].timer.getElapsedMilliseconds() - a[1].timer.getElapsedMilliseconds());
     }
 
     initFromSerialMap(serialMap) {
@@ -204,12 +223,12 @@ class StatisticsHandler {
     }
 
     reset() {
-		this.hostnameToTimeData = {};
+        this.hostnameToTimeData = {};
         this.lastHostname = '';
     }
 }
 
-let gStatisticsHandler = new StatisticsHandler();
+window.statisticsHandler = new StatisticsHandler();
 
 function updateStatisticsFromTab(tab) {
     if (!tab.url || tab.url.length === 0) {
@@ -217,9 +236,7 @@ function updateStatisticsFromTab(tab) {
     }
     const { url, id } = tab;
     const hostname = getUrlHostname(url);
-    console.log('onUpdated url: ' + url);
-    console.log('onUpdated hostname: ' + hostname);
-    gStatisticsHandler.updateHostTimeData(hostname, id);
+    window.statisticsHandler.updateHostTimeData(hostname, id);
 }
 
 function updateActiveTabData() {
@@ -227,6 +244,7 @@ function updateActiveTabData() {
         const currTab = tabs[0];
         if (!currTab) {
             console.log('No active tab!');
+            window.statisticsHandler.deactivateCurrentHost();
             return;
         }
         updateStatisticsFromTab(currTab);
@@ -245,99 +263,38 @@ function getDataFromStorage() {
 
         let serializedMap = JSON.parse(result.stat);
         if (serializedMap) {
-            gStatisticsHandler.initFromSerialMap(serializedMap);
+            window.statisticsHandler.initFromSerialMap(serializedMap);
         }
     });
 }
 
-function setListeners() {
-    chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-        if (changeInfo.discarded !== undefined) {
-            console.log('onUpdated discarded: ' + changeInfo.discarded);
+function showModal()
+{
+    chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
+        const currTab = tabs[0];
+        if (!currTab) {
+            console.log('No active tab!');
+            return;
         }
-        updateStatisticsFromTab(tab);
-    });
-
-    chrome.tabs.onActivated.addListener(function (activeInfo) {
-        console.log('onActivated');
-        chrome.tabs.get(activeInfo.tabId, updateStatisticsFromTab);
-    });
-
-    chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
-        console.log('onRemoved ' + tabId);
-        gStatisticsHandler.deactivate(tabId);
-        setDataToStorage(gStatisticsHandler.getMapForSerialization());
-    });
-    chrome.windows.onFocusChanged.addListener(function (number) {
-        setDataToStorage(gStatisticsHandler.getMapForSerialization());
-        if (number === chrome.windows.WINDOW_ID_NONE) {
-            console.log('No active window - will deactivate last hostname');
-            chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
-                const currTab = tabs[0];
-                if (!currTab) {
-                    console.log('No active tab!');
-                    gStatisticsHandler.deactivateHost(gStatisticsHandler.lastHostname);
-                    return;
-                }
-                updateStatisticsFromTab(currTab);
-            });
-        } else {
-            updateActiveTabData();
-        }
-    });
-
-    chrome.runtime.onSuspend.addListener(function () {
-        updateActiveTabData();
-        setDataToStorage(gStatisticsHandler.getMapForSerialization());
-    });
-
-    const alarmCreateInfo =
-        {
-            'delayInMinutes': 1,
-            'periodInMinutes': 2
-        };
-	const activeTabUpdater = 'ActiveTabUpdater';
-    chrome.alarms.create(activeTabUpdater, alarmCreateInfo);
-
-    const serializerAlarmCreateInfo =
-        {
-            'delayInMinutes': 1,
-            'periodInMinutes': 2
-        };
-	const statisticsSerializer = 'StatisticsSerializer';
-    chrome.alarms.create(statisticsSerializer, serializerAlarmCreateInfo);
-
-    chrome.alarms.onAlarm.addListener(function (alarm) {
-        console.log('Alarm fired: ' + alarm.name);
-        if (alarm.name == activeTabUpdater) {
-            updateActiveTabData();
-        }
-        if (alarm.name == statisticsSerializer) {
-            setDataToStorage(gStatisticsHandler.getMapForSerialization());
-            checkDayChange();
-        }
-    });
-
-    chrome.runtime.onMessage.addListener((message, sender, response) => {
-        if (message === "getStatistics") {
-            let hostToTimestamp = {};
-            const sortedDataMap = Object.entries(gStatisticsHandler.hostnameToTimeData).sort((a, b) => b[1].timer.getElapsedMilliseconds() - a[1].timer.getElapsedMilliseconds())
-            for (let [key, value] of sortedDataMap) {
-                hostToTimestamp[key] = value.getActiveTimeDuration().toString();
+        window.communicationPort = chrome.tabs.connect(currTab.id, {name: "contentScriptPort"});
+        window.communicationPort.postMessage({name : "showModal", stat : window.statisticsHandler.getFormattedMap()});
+        chrome.tabs.sendMessage(currTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
+            if (chrome.runtime.lastError) {
+                console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
             }
-            response(JSON.stringify(hostToTimestamp));
-        }
+        })
     });
-} 
+}
 
 function onDayChanged() {
+    showModal();
+    
     chrome.storage.local.remove('stat', () => {
         if (chrome.runtime.lastError) {
             console.warn("Failed to remove stat from storage " + chrome.runtime.lastError.message);
         } else {
-            setDataToStorage('');
             console.log("Removed stat from local storage");
-            gStatisticsHandler.reset();
+            window.statisticsHandler.reset();
         }
     });
 }
@@ -353,13 +310,54 @@ function checkDayChange() {
         }
         chrome.storage.local.set({day: getWeekDay()});
     });
+}
 
+function setListeners() {
+    chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+        console.log('onUpdated');
+        updateStatisticsFromTab(tab);
+    });
+
+    chrome.tabs.onActivated.addListener(function (activeInfo) {
+        console.log('onActivated');
+        chrome.tabs.get(activeInfo.tabId, updateStatisticsFromTab);
+    });
+
+    chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
+        console.log('onRemoved ' + tabId);
+        window.statisticsHandler.deactivate(tabId);
+        setDataToStorage(window.statisticsHandler.getMapForSerialization());
+    });
+    chrome.windows.onFocusChanged.addListener(function (number) {
+        console.log('onFocusChanged: ' + number);  
+        updateActiveTabData();
+        setDataToStorage(window.statisticsHandler.getMapForSerialization());
+    });
+
+    chrome.runtime.onSuspend.addListener(function () {
+        console.log('onSuspend');
+        updateActiveTabData();
+        setDataToStorage(window.statisticsHandler.getMapForSerialization());
+    });
+
+    chrome.runtime.onMessage.addListener((message, sender, response) => {
+        if (message === "getStatistics") {
+            response(window.statisticsHandler.getFormattedMap());
+        }
+    });
 }
 
 function initializeStatistics() {
     getDataFromStorage();
     updateActiveTabData();
     setListeners();
+    setInterval(()=>{
+        updateActiveTabData();
+        setDataToStorage(window.statisticsHandler.getMapForSerialization());
+        checkDayChange();
+    }, 10000);
+    
+    setInterval(showModal, 3600*1000);
 }
 
 initializeStatistics();

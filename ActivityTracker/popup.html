@@ -1,32 +1,55 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Statistics info</title>
-		<style>
-		.button-container {
-			background: gray;
-			overflow-y: auto;
-			overflow-x: initial;
-			text-align: center;
-			display: flex;
-		}
-		</style>
-	</head>
-	<body>
-		<div class ="button-container" >
-			<button id='Statistics'>Show statistics</button>
-			<button id='Settings'>Settings</button>
-		</div>
-		<table	id="statisticsTable" style="display:none" width="100%" cellpadding="1" cellspacing="0" border="3">
-			<thead>
-				<th>Site</th>
-				<th>Time(hh:mm:ss:mmm)</th>
-			</thead>
-			<div>
-				<tbody>
-				</tbody>
-			</div>
-		</table>
-	<script src="popup.js"></script>
-	</body>
+    <head>
+        <title>Statistics info</title>
+        <style>
+        .button-container {
+            text-align: center;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-evenly;
+            border: none;
+            align-items: stretch;
+        }
+        .button {
+            display: flex; 
+            flex-direction: row;
+            flex-grow: 5;
+            justify-content: center;
+            border: none;
+            border-radius: 10px;
+            width: 100px;
+            align-items: center;
+        }
+        button:focus{
+            outline:none;
+        }
+
+        button:hover{
+            background:lightgray;
+        }
+        button:visited {
+            background: blue;
+         }
+        </style>
+    </head>
+    <body style="border:none; border-radius: 10px;">
+        <div class ="button-container">
+            <button id='Statistics' class="button">Show statistics</button>
+            <button id='Settings' class="button">Settings</button>
+        </div>
+        <div style="max-height:340px; overflow: auto;">
+            <table id="statisticsTable" style="display: none; flex-direction: column; border-color: black;" width="80%" cellpadding="1" cellspacing="0" border="2" border-color="black"">
+                <thead>
+                    <th>Site</th>
+                    <th>Time(hh:mm:ss:mmm)</th>
+                </thead>
+                <div font-size="medium" font-style="normal" font-family="Segoe UI">
+                    <tbody>
+                    </tbody>
+                </div>
+            </table>
+        </div>
+    <script src="popup.js"></script>
+    </body>
 </html>

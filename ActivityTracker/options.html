@@ -6,34 +6,39 @@
         #main {
             max-width: 50%;
         }
+
         #new-url-form {
             display: flex;
         }
+
         #new-url-form input {
             border-radius: unset;
             border: 1px solid gray;
             flex: 1;
             margin-right: 5px;
         }
+
         #new-url-form button {
             height: 30px;
             display: flex;
             border: 1px solid gray;
             align-items: center;
         }
+
         #new-url-form input:hover,
         #new-url-form input:focus,
         #new-url-form input:active {
             outline: none;
         }
+
         #new-url-container {
             display: flex;
             width: 100%;
             justify-content: stretch;
         }
-        .error-container {
-            color: red;
-            text-align: center;
+
+        #time-limits table {
+            width: 50vw;
         }
     </style>
 </head>
@@ -45,7 +50,7 @@
                     type="text"
                     placeholder="Add new URL"
                     name="hostnameValue"
-                    pattern="^[a-zA-Z][a-zA-Z\.\d-]{1,22}\.[a-zA-Z\d]{1,20}$"
+                    pattern="^(?!(w+)\.)\w*(?:\w+\.)+\w+$"
                     required
             >
             <input
@@ -56,21 +61,19 @@
             >
             <button id="add-new-url"><span>Add</span></button>
         </div>
-        <div class="error-container"></div>
     </form>
     <div id="time-limits">
         <table>
             <thead>
-            <tr>
-                <td>Hostname</td>
-                <td>Time Limit</td>
-                <th>Actions</th>
-            </tr>
+                <tr>
+                    <td>Hostname</td>
+                    <td>Time Limit</td>
+                    <th>Actions</th>
+                </tr>
             </thead>
             <tbody>
             </tbody>
         </table>
-
     </div>
 </div>
 <script src="options.js"></script>
@@ -78,7 +81,9 @@
     <tr class="settings-row">
         <td class="hostname"></td>
         <td class="time-limit"></td>
-        <td><button id="remove-hostname">Remove</button></td>
+        <td>
+            <button id="remove-hostname">Remove</button>
+        </td>
     </tr>
 </template>
 </body>

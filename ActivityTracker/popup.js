@@ -1,7 +1,6 @@
 'use strict';
 let isStatDisplayed = false;
-function ShowStatistics()
-{
+function showStatistics() {
     chrome.runtime.sendMessage(null, "getStatistics", {}, (response) =>
     {
         let table = document.getElementById('statisticsTable');
@@ -17,8 +16,7 @@ function ShowStatistics()
     });
 }
 
-function HideStatistics()
-{
+function hideStatistics() {
     let table = document.getElementById('statisticsTable');
     table.style.display = "none";
     let tbodyRef = table.getElementsByTagName('tbody')[0];
@@ -27,22 +25,19 @@ function HideStatistics()
 }
 
 
-function ToggleStatistics()
-{
+function toggleStatistics() {
     let statButton = document.getElementById('Statistics');
-    if(isStatDisplayed)
-    {
-        HideStatistics();
+    if(isStatDisplayed) {
+        hideStatistics();
         statButton.innerText = 'Show statistics';
     }
-    else
-    {
-        ShowStatistics();
+    else {
+        showStatistics();
         statButton.innerText = 'Hide statistics';
     }
     isStatDisplayed = !isStatDisplayed;
 }
 
-document.getElementById('Statistics').addEventListener('click', ToggleStatistics);
+document.getElementById('Statistics').addEventListener('click', toggleStatistics);
 // document.getElementById('Settings').addEventListener('click', toggleBadge);
 

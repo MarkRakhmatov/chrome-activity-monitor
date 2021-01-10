@@ -5,8 +5,7 @@ function showStatistics() {
         var table = document.getElementById('statisticsTable');
         var tbodyRef = table.getElementsByTagName('tbody')[0];
         var statisticsMap = JSON.parse(response);
-        for(var key in statisticsMap)
-        {
+        for(var key in statisticsMap) {
             var newRow = tbodyRef.insertRow();
             newRow.insertCell().appendChild(document.createTextNode(key));
             newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
@@ -23,8 +22,7 @@ function hideStatistics() {
 }
 
 function showModal() {
-    if(isStatDisplayed)
-    {
+    if(isStatDisplayed) {
         hideStatistics();
         showStatistics();
         return;
@@ -78,8 +76,7 @@ function showModal() {
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       console.log("Show statistics!");
-      if (request.name == "showModal")
-      {
+      if (request.name == "showModal") {
         showModal();
         sendResponse();
       }

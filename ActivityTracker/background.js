@@ -1,16 +1,14 @@
 (function(){
-function getUrlHostname(urlString) {
-    var hostname = new URL(urlString).hostname;
+function getHostname(urlString) {
+    return new URL(urlString).hostname;
+}
+function getHostnameOrUrl(urlString){
+    let hostname = getHostname(urlString);
     if(!hostname) {
+        console.log('Failed to get hostname - return full URL!');
         return urlString;
     }
-    if(chrome.runtime.id === hostname){
-        console.log('Return empty string to skip handling of events from our extension!');
-        return '';
-    }
-    return hostname;
 }
-
 function getWeekDay() {
     const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -185,7 +183,7 @@ class StatisticsHandler {
             const value = this.hostnameToTimeData[host];
             if (value.tabIds.has(tabId)) {
                 console.log('User closed tab with hostname: ' + host);
-                console.log('Opened tabs: ' + Array.from(this.hostnameToTimeData[host].tabIds).toString());
+                console.log('Opened tabs: ' + Array.from(this.hostnameToTimeData[host].tabIds));
                 value.deactivate();
                 value.removeTab(tabId);
             }
@@ -261,9 +259,11 @@ function updateStatisticsFromTab(tab) {
         return;
     }
     const { url, id } = tab;
-    const hostname = getUrlHostname(url);
-    if(!hostname.length) {
-        console.warn("Tab with empty host: " + url + " skip update");
+    const hostname = getHostnameOrUrl(url);
+
+    if(chrome.runtime.id === hostname) {
+        console.log('Skip handling of events from our extension!');
+        return;
     }
     window.statisticsHandler.updateHostTimeData(hostname, id);
 }
@@ -367,14 +367,14 @@ function setListeners() {
             return;
         }
         if(message.name === "blur") {
-            let url = getUrlHostname(message.url);
+            let url = getHostnameOrUrl(message.url);
             console.log('blur ' + url);
             window.statisticsHandler.deactivateCurrentHost();
             window.statisticsHandler.setFocusState(false, sender.tab.id);
         }
         else if(message.name === "focus") {  
-            let url = getUrlHostname(message.url);    
-            console.log('focus ' + getUrlHostname(message.url));
+            let url = getHostnameOrUrl(message.url);    
+            console.log('focus ' + url);
             window.statisticsHandler.setFocusState(true, sender.tab.id);
             updateActiveTabData();
         }

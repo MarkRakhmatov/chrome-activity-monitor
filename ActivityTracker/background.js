@@ -8,6 +8,7 @@ function getHostnameOrUrl(urlString) {
         console.log('Failed to get hostname - return full URL!');
         return urlString;
     }
+    return hostname;
 }
 function getWeekDay() {
     const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

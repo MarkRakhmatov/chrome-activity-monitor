@@ -1,8 +1,8 @@
-(function(){
+(function() {
 function getHostname(urlString) {
     return new URL(urlString).hostname;
 }
-function getHostnameOrUrl(urlString){
+function getHostnameOrUrl(urlString) {
     let hostname = getHostname(urlString);
     if(!hostname) {
         console.log('Failed to get hostname - return full URL!');
@@ -212,7 +212,7 @@ class StatisticsHandler {
             this.isDocumentFocused = false;
         }
     }
-    getLastHostname(){
+    getLastHostname() {
         return this.lastHostname;
     }
     getFormattedMap()

@@ -4,47 +4,70 @@
         <title>Statistics info</title>
         <style>
         .button-container {
-            text-align: center;
             display: flex;
             flex-direction: row;
-            justify-content: space-evenly;
+            justify-content:space-evenly;
             border: none;
-            align-items: stretch;
+            align-items:center;
         }
         .button {
-            display: flex; 
-            flex-direction: row;
-            flex-grow: 5;
-            justify-content: center;
-            border: none;
+            background-color:#3367D6;
+            border: black;
+            align-items:center;
+            text-align: center;
             border-radius: 10px;
-            width: 100px;
-            align-items: center;
+            max-width: 100px;
+            max-height: 50px;
+            min-width: 100px;
+            min-height: 50px;
+            cursor: pointer;
+            color: white;
+            transition-duration: 0.4s;
         }
         button:focus{
             outline:none;
         }
 
         button:hover{
-            background:lightgray;
+            background: #2850A7;
+            box-shadow: 0 8px 10px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
         }
-        button:visited {
-            background: blue;
-         }
+        #statisticsTable {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        #statisticsTable td,
+        #statisticsTable th {
+            border: 1px solid #ddd;
+            }
+        #statisticsTable tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        #statisticsTable tr:hover {
+            background-color: #ddd;
+        }
+        #statisticsTable th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: center;
+            background-color: #3367D6;
+            color: white;
+        }
         </style>
     </head>
-    <body style="border:none; border-radius: 10px;">
+    <body style="display: flex; flex-direction: column; border:none; max-width: 320p; min-width: 260px; background-color:#fdfcf9;">
         <div class ="button-container">
             <button id='Statistics' class="button">Show statistics</button>
             <button id='Settings' class="button">Settings</button>
         </div>
-        <div style="max-height:340px; overflow: auto;">
-            <table id="statisticsTable" style="display: none; flex-direction: column; border-color: black;" width="80%" cellpadding="1" cellspacing="0" border="2" border-color="black"">
+        <div style="max-height:340px; overflow: auto; padding-top: 10px;">
+            <table id="statisticsTable" style="display: none; flex-direction: column; border:none" cellpadding="2" cellspacing="0" border="2" border-color="black"">
                 <thead>
                     <th>Site</th>
-                    <th>Time(hh:mm:ss:mmm)</th>
+                    <th>Time(hh:mm:ss)</th>
                 </thead>
-                <div font-size="medium" font-style="normal" font-family="Segoe UI">
+                <div>
                     <tbody>
                     </tbody>
                 </div>

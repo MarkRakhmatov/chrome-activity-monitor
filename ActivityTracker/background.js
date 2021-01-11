@@ -1,6 +1,14 @@
 (function(){
 function getUrlHostname(urlString) {
-    return new URL(urlString).hostname;
+    var hostname = new URL(urlString).hostname;
+    if(!hostname) {
+        return urlString;
+    }
+    if(chrome.runtime.id === hostname){
+        console.log('Return empty string to skip handling of events from our extension!');
+        return '';
+    }
+    return hostname;
 }
 
 function getWeekDay() {
@@ -39,8 +47,7 @@ class Duration {
     toString() {
         return '' + zeroPrefixedNum(this.hours, 2) +
             ':' + zeroPrefixedNum(this.minutes, 2) +
-            ':' + zeroPrefixedNum(this.seconds, 2) +
-            ':' + zeroPrefixedNum(this.milliseconds, 3);
+            ':' + zeroPrefixedNum(this.seconds, 2);
     }
 }
 
@@ -195,7 +202,7 @@ class StatisticsHandler {
     deactivateCurrentHost() {
         this.deactivateHost(this.lastHostname);
     }
-    setFocusState(focusState, url, tabId) {
+    setFocusState(focusState, tabId) {
         if(focusState) {
             this.currentTab = tabId;
             this.isDocumentFocused = true;
@@ -255,6 +262,9 @@ function updateStatisticsFromTab(tab) {
     }
     const { url, id } = tab;
     const hostname = getUrlHostname(url);
+    if(!hostname.length) {
+        console.warn("Tab with empty host: " + url + " skip update");
+    }
     window.statisticsHandler.updateHostTimeData(hostname, id);
 }
 function operationOnActiveTab(onActiveTab, onNoActiveTab) {
@@ -298,15 +308,15 @@ function showModal()
 {
     operationOnActiveTab( 
         (activeTab)=> {
-        chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
-            if (chrome.runtime.lastError) {
-                console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
-            }
-        }),
+            chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
+                if (chrome.runtime.lastError) {
+                    console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
+                }
+            })
+        },
         ()=> {
             console.log('No active tab!');
-        }
-    });
+        });
 }
 
 function onDayChanged() {
@@ -360,12 +370,12 @@ function setListeners() {
             let url = getUrlHostname(message.url);
             console.log('blur ' + url);
             window.statisticsHandler.deactivateCurrentHost();
-            window.statisticsHandler.setFocusState(false, url, sender.tab.id);
+            window.statisticsHandler.setFocusState(false, sender.tab.id);
         }
         else if(message.name === "focus") {  
             let url = getUrlHostname(message.url);    
             console.log('focus ' + getUrlHostname(message.url));
-            window.statisticsHandler.setFocusState(true, url, sender.tab.id);
+            window.statisticsHandler.setFocusState(true, sender.tab.id);
             updateActiveTabData();
         }
         else if (message.name === "getStatistics") {

@@ -2,7 +2,7 @@
 let isStatDisplayed = false;
 
 function showStatistics() {
-    chrome.runtime.sendMessage(null, "getStatistics", {}, (response) => {
+    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) => {
         var table = document.getElementById('statisticsTable');
         var tbodyRef = table.getElementsByTagName('tbody')[0];
         var statisticsMap = JSON.parse(response);
@@ -30,42 +30,111 @@ function showModal() {
     }
     const modal = document.createElement("dialog");
     modal.setAttribute("style", 
-    `display: flex;
+    `
+    display: flex;
     flex-direction: column;
-    flex-wrap: wrap; 
-    justify-content: space-evenly;
+    justify-content:space-evenly;
     position: fixed;
-    top: 10%;
+    top: 25%;
     border: none;
+    background-color:#fdfcf9;
     border-radius: 20px;
+    padding-bottom: 15px;
+    padding-left: 15px;
+    padding-right: 15px;
+    margin:0 auto;
     `);
+    modal.setAttribute("id", "StatisticsModalWindow");
     modal.innerHTML = 
     `
     <div>
-    <div style="text-align: center;">
-        <button style="font-size: 16px; border: none; border-radius: 15px; top: 10%;">x</button>
-    </div>
-    <div style="display: flex; flex-direction: column; overflow: auto;">
-        <table id="statisticsTable" style="display: flex; flex-direction: column; border-color: black; max-height: 400px;" width="80%" cellpadding="1" cellspacing="0" border="2" border-color="black"">
-            <thead>
-                <th>Site</th>
-                <th>Time(hh:mm:ss:mmm)</th>
-            </thead>
-            <div font-size="medium" font-style="normal" font-family="Segoe UI">
-                <tbody>
-                </tbody>
-            </div>
-        </table>
-    </div>
+    <div style="
+            display: flex;
+            flex-wrap: wrap;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: none;">
+        <style>
+            #statisticsButtonContainer button:hover {
+                background: #E81123;
+                color: white;
+                box-shadow: 0 8px 10px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+            }
+            #statisticsButtonContainer button:focus {
+                outline: none;
+            }
+            #statisticsTable {
+                font-family: Arial, Helvetica, sans-serif;
+                border-collapse: collapse;
+                width: 100%;
+            }
+            #statisticsTable td,
+            #statisticsTable th {
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+            #statisticsTable tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+            #statisticsTable tr:hover {
+                background-color: #ddd;
+            }
+            #statisticsTable th {
+                padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: center;
+                background-color: #3367D6;
+                color: white;
+            }
+        </style>
+        <div style="
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 2%;"
+                    id="statisticsButtonContainer">
+            <button id ="statisticsButton" style="font-size: 14px; width: 35px; height: 35px; border: none; border-radius: 15px;">x</button>
+        </div>
+        <div style="
+                display: flex;
+                flex-direction: column;
+                padding-bottom: 3px;
+                padding-left: 3px;
+                padding-right: 3px;
+                padding: 3px; 
+                overflow-y: auto;
+                max-height: 400px; 
+                ">
+            <table style="
+                            display: table;
+                            font-size: 16px;
+                            font-style: normal;
+                            font-family:sans-serif;
+                            border-spacing:0px;" id="statisticsTable" cellpadding="3" cellspacing="0"
+                bordercolor="black" border="1">
+                <div>
+                    <thead>
+                        <th>Site</th>
+                        <th>Time(hh:mm:ss)</th>
+                    </thead>
+                </div>
+                <div>
+                    <tbody>
+                    </tbody>
+                </div>
+            </table>
+        </div>
     </div>
     `;
     document.body.appendChild(modal);
-    let dialog = document.querySelector("dialog");
+    let dialog = document.querySelector("dialog[id=StatisticsModalWindow]");
     dialog.showModal();
     hideStatistics();
     showStatistics();
     isStatDisplayed = true;
-    dialog.querySelector("button").addEventListener("click", () => {
+    dialog.querySelector("button[id=statisticsButton]").addEventListener("click", () => {
         console.log("MODAL close event");
         dialog.style.display = "none";
         dialog.close();

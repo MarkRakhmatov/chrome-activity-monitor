@@ -43,6 +43,7 @@ function showModal() {
     padding-left: 15px;
     padding-right: 15px;
     margin:0 auto;
+    min-width: 260px;
     `);
     modal.setAttribute("id", "StatisticsModalWindow");
     modal.innerHTML = 

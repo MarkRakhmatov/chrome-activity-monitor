@@ -57,6 +57,13 @@ function showModal() {
             align-items: center;
             border: none;">
         <style>
+            #statisticsButtonContainer {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 2%;
+            }
             #statisticsButtonContainer button:hover {
                 background: #E81123;
                 color: white;
@@ -64,6 +71,14 @@ function showModal() {
             }
             #statisticsButtonContainer button:focus {
                 outline: none;
+            }
+            #statisticsButton {
+                font-size: 14px;
+                width: 35px;
+                height: 35px;
+                border: none;
+                border-radius: 15px;
+                transition-duration: 0.4s;
             }
             #statisticsTable {
                 font-family: Arial, Helvetica, sans-serif;
@@ -89,14 +104,8 @@ function showModal() {
                 color: white;
             }
         </style>
-        <div style="
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 2%;"
-                    id="statisticsButtonContainer">
-            <button id ="statisticsButton" style="font-size: 14px; width: 35px; height: 35px; border: none; border-radius: 15px;">x</button>
+        <div id="statisticsButtonContainer">
+            <button id ="statisticsButton">x</button>
         </div>
         <div style="
                 display: flex;

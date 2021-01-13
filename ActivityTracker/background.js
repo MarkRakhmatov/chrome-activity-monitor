@@ -201,16 +201,18 @@ class StatisticsHandler {
     deactivateCurrentHost() {
         this.deactivateHost(this.lastHostname);
     }
-    setFocusState(focusState, tabId) {
+    handleFocusChange(focusState, hostname, tabId) {
         if(focusState) {
             this.currentTab = tabId;
             this.isDocumentFocused = true;
+            this.updateHostTimeData(hostname, tabId);
         }
         else if(tabId != this.currentTab) {
             console.log("Skip focus deactivating - tab is not active!");
         }
         else {
             this.isDocumentFocused = false;
+            deactivateCurrentHost();
         }
     }
     getLastHostname() {
@@ -364,6 +366,7 @@ function setListeners() {
     chrome.tabs.onActivated.addListener(function (activeInfo) {
         console.log('onActivated');
         chrome.tabs.get(activeInfo.tabId, updateStatisticsFromTab);
+        setDataToStorage(window.statisticsHandler.getMapForSerialization());
     });
 
     chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
@@ -376,17 +379,10 @@ function setListeners() {
         if(!message.name) {
             return;
         }
-        if(message.name === "blur") {
+        if(message.name === "focusState") {
             let url = getHostnameOrUrl(message.url);
-            console.log('blur ' + url);
-            window.statisticsHandler.deactivateCurrentHost();
-            window.statisticsHandler.setFocusState(false, sender.tab.id);
-        }
-        else if(message.name === "focus") {  
-            let url = getHostnameOrUrl(message.url);    
-            console.log('focus ' + url);
-            window.statisticsHandler.setFocusState(true, sender.tab.id);
-            updateActiveTabData();
+            console.log((message.focus === true? 'focus ' : 'blur ') + url);
+            window.statisticsHandler.handleFocusChange(message.focus, url, sender.tab.id);
         }
         else if (message.name === "getStatistics") {
             response(window.statisticsHandler.getFormattedMap());
@@ -399,12 +395,10 @@ function initializeStatistics() {
     updateActiveTabData();
     setListeners();
     setInterval(()=>{
-        updateActiveTabData();
-        setDataToStorage(window.statisticsHandler.getMapForSerialization());
         checkDayChange();
     }, 20000);
     
-    setInterval(showModal, 3600*1000);
+    setInterval(showModal, 7200*1000);
 }
 
 initializeStatistics();

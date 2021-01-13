@@ -154,13 +154,14 @@ function showModal(stat) {
 
 let lastFocuseState = true;
 function checkPageFocus() {
-    let message = "focus";
+    let message = "focusState";
+    let focusState = true;
     let isDocumentFocused = document.hasFocus();
     if (!isDocumentFocused) {
-        message = "blur";
+        focusState = "false";
     }
     if(isDocumentFocused != lastFocuseState) {
-        chrome.runtime.sendMessage(null, {name: message, url: document.URL});
+        chrome.runtime.sendMessage(null, {name: message, url: document.URL, focus: focusState});
     }
     lastFocuseState = isDocumentFocused;
 }

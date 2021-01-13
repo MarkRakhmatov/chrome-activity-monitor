@@ -7,7 +7,6 @@
   "tabs",
   "storage",
   "alarms",
-  "activeTab",
   "*://*/*"],
   "content_scripts": [{ 
     "js": [ "modal.js"],

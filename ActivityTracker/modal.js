@@ -1,18 +1,16 @@
 (function(){
 let isStatDisplayed = false;
 
-function showStatistics() {
-    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) => {
-        var table = document.getElementById('statisticsTable');
-        var tbodyRef = table.getElementsByTagName('tbody')[0];
-        var statisticsMap = JSON.parse(response);
-        for(var key in statisticsMap) {
-            var newRow = tbodyRef.insertRow();
-            newRow.insertCell().appendChild(document.createTextNode(key));
-            newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
-        }
-        table.style.display = "table";
-    });
+function showStatistics(stat) {
+    var table = document.getElementById('statisticsTable');
+    var tbodyRef = table.getElementsByTagName('tbody')[0];
+    var statisticsMap = JSON.parse(stat);
+    for(var key in statisticsMap) {
+        var newRow = tbodyRef.insertRow();
+        newRow.insertCell().appendChild(document.createTextNode(key));
+        newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
+    }
+    table.style.display = "table";
 }
 function hideStatistics() {
     var table = document.getElementById('statisticsTable');
@@ -22,10 +20,10 @@ function hideStatistics() {
     tbodyRef.parentNode.replaceChild(new_tbody, tbodyRef);
 }
 
-function showModal() {
+function showModal(stat) {
     if(isStatDisplayed) {
         hideStatistics();
-        showStatistics();
+        showStatistics(stat);
         return;
     }
     const modal = document.createElement("dialog");
@@ -78,6 +76,7 @@ function showModal() {
                 height: 35px;
                 border: none;
                 border-radius: 15px;
+                text-align: center;
                 transition-duration: 0.4s;
             }
             #statisticsTable {
@@ -142,7 +141,7 @@ function showModal() {
     let dialog = document.querySelector("dialog[id=StatisticsModalWindow]");
     dialog.showModal();
     hideStatistics();
-    showStatistics();
+    showStatistics(stat);
     isStatDisplayed = true;
     dialog.querySelector("button[id=statisticsButton]").addEventListener("click", () => {
         console.log("MODAL close event");
@@ -172,7 +171,7 @@ chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.name == "showModal") {
             console.log("Show statistics!");
-            showModal();
+            showModal(request.stat);
         }
         sendResponse();
     }

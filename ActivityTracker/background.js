@@ -250,6 +250,7 @@ class StatisticsHandler {
     reset() {
         this.hostnameToTimeData = {};
         this.lastHostname = '';
+        this.currentTab = 0;
     }
 }
 
@@ -272,7 +273,9 @@ function operationOnActiveTab(onActiveTab, onNoActiveTab) {
     chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
         const activeTab = tabs[0];
         if (!activeTab) {
-            onNoActiveTab();
+            if(onNoActiveTab) {
+                onNoActiveTab();
+            }
             return;
         }
         onActiveTab(activeTab);
@@ -282,7 +285,6 @@ function updateActiveTabData() {
     operationOnActiveTab(
         updateStatisticsFromTab,
         ()=>{
-            console.log('No active tab!');
             window.statisticsHandler.deactivateCurrentHost();
         }
     );
@@ -309,7 +311,13 @@ function showModal()
 {
     operationOnActiveTab( 
         (activeTab)=> {
-            chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : window.statisticsHandler.getFormattedMap()}, {}, (_response)=>{
+            let formattedStat = window.statisticsHandler.getFormattedMap();
+            if(formattedStat === "{}")
+            {
+                console.warn('Stat object is empty!');
+                return;
+            }
+            chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : formattedStat}, {}, (_response)=>{
                 if (chrome.runtime.lastError) {
                     console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
                 }
@@ -321,14 +329,15 @@ function showModal()
 }
 
 function onDayChanged() {
+    updateActiveTabData();
     showModal();
-    
     chrome.storage.local.remove('stat', () => {
         if (chrome.runtime.lastError) {
             console.warn("Failed to remove stat from storage " + chrome.runtime.lastError.message);
         } else {
             console.log("Removed stat from local storage");
             window.statisticsHandler.reset();
+            updateActiveTabData();
         }
     });
 }

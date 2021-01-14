@@ -1,12 +1,15 @@
 'use strict';
-
-function ShowStatistics() {
-    chrome.runtime.sendMessage(null, "getStatistics", {}, (response) => {
-        var table = document.getElementById('statisticsTable');
-        var tbodyRef = table.getElementsByTagName('tbody')[0];
-        var statisticsMap = JSON.parse(response);
-        for (var key in statisticsMap) {
-            var newRow = tbodyRef.insertRow();
+(function(){
+let isStatDisplayed = false;
+function showStatistics() {
+    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) =>
+    {
+        let table = document.getElementById('statisticsTable');
+        let tbodyRef = table.getElementsByTagName('tbody')[0];
+        let statisticsMap = JSON.parse(response);
+        for(let key in statisticsMap)
+        {
+            let newRow = tbodyRef.insertRow();
             newRow.insertCell().appendChild(document.createTextNode(key));
             newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
         }
@@ -14,24 +17,26 @@ function ShowStatistics() {
     });
 }
 
-function HideStatistics() {
-    var table = document.getElementById('statisticsTable');
+function hideStatistics() {
+    let table = document.getElementById('statisticsTable');
     table.style.display = "none";
-    var tbodyRef = table.getElementsByTagName('tbody')[0];
-    var new_tbody = document.createElement('tbody');
+    let tbodyRef = table.getElementsByTagName('tbody')[0];
+    let new_tbody = document.createElement('tbody');
     tbodyRef.parentNode.replaceChild(new_tbody, tbodyRef);
 }
 
 
-function ToggleStatistics(event) {
-    var statButton = document.getElementById('Statistics');
-    if (statButton.innerText == "Show statistics") {
-        ShowStatistics();
-        statButton.innerText = 'Hide statistics';
-    } else {
-        HideStatistics();
+function toggleStatistics() {
+    let statButton = document.getElementById('Statistics');
+    if(isStatDisplayed) {
+        hideStatistics();
         statButton.innerText = 'Show statistics';
     }
+    else {
+        showStatistics();
+        statButton.innerText = 'Hide statistics';
+    }
+    isStatDisplayed = !isStatDisplayed;
 }
 
 function openOptions() {
@@ -44,6 +49,6 @@ function openOptions() {
 
 //An Alarm delay of less than the minimum 1 minute will fire
 // in approximately 1 minute incriments if released
-document.getElementById('Statistics').addEventListener('click', ToggleStatistics);
+document.getElementById('Statistics').addEventListener('click', toggleStatistics);
 document.getElementById('Settings').addEventListener('click', openOptions);
-
+})()

@@ -7,11 +7,14 @@
   "tabs",
   "storage",
   "alarms",
-  "declarativeContent"],
-
+  "*://*/*"],
+  "content_scripts": [{ 
+    "js": [ "modal.js"],
+    "matches": [ "*://*/*"]
+  }],
   "background": {
     "scripts": ["background.js"],
-	"persistent": true
+    "persistent": true
   },
   "manifest_version": 2,
   "options_ui": {
@@ -21,9 +24,9 @@
   "browser_action": {
     "default_popup": "popup.html",
     "default_icon": {
-		"32" : "icon32.png",
-		"48" : "icon48.png",
-		"128" : "icon128.png"
-	}
+      "32" : "icon32.png",
+      "48" : "icon48.png",
+      "128" : "icon128.png"
+    }
   }
 }

@@ -152,22 +152,20 @@ function showModal(stat) {
     });
 }
 
-let lastFocuseState = true;
-function checkPageFocus() {
+function notifyFocusChange(isInFocus) {
     let message = "focusState";
-    let focusState = true;
-    let isDocumentFocused = document.hasFocus();
-    if (!isDocumentFocused) {
-        focusState = "false";
-    }
-    if(isDocumentFocused != lastFocuseState) {
-        chrome.runtime.sendMessage(null, {name: message, url: document.URL, focus: focusState});
-    }
-    lastFocuseState = isDocumentFocused;
+    chrome.runtime.sendMessage(null, {name: message, url: document.URL, focus: isInFocus});
 }
 
-setInterval( checkPageFocus, 200 );
-
+window.onfocus = function() {
+    notifyFocusChange(true);
+}
+window.onblur = function() {
+    notifyFocusChange(false);
+}
+document.onmouseenter = function() {
+    notifyFocusChange(true);
+}
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.name == "showModal") {

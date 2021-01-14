@@ -212,7 +212,7 @@ class StatisticsHandler {
         }
         else {
             this.isDocumentFocused = false;
-            deactivateCurrentHost();
+            this.deactivateCurrentHost();
         }
     }
     getLastHostname() {
@@ -286,9 +286,7 @@ function operationOnActiveTab(onActiveTab, onNoActiveTab) {
 function updateActiveTabData() {
     operationOnActiveTab(
         updateStatisticsFromTab,
-        ()=>{
-            window.statisticsHandler.deactivateCurrentHost();
-        }
+        window.statisticsHandler.deactivateCurrentHost.bind(window.statisticsHandler)
     );
 }
 
@@ -311,23 +309,25 @@ function getDataFromStorage() {
 
 function showModal()
 {
-    operationOnActiveTab( 
-        (activeTab)=> {
-            let formattedStat = window.statisticsHandler.getFormattedMap();
-            if(formattedStat === "{}")
-            {
-                console.warn('Stat object is empty!');
-                return;
+    let showStatistiTableOnActivePath = (activeTab)=> {
+        let formattedStat = window.statisticsHandler.getFormattedMap();
+        if(formattedStat === "{}")
+        {
+            console.warn('Stat object is empty!');
+            return;
+        }
+        chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : formattedStat}, {}, (_response)=>{
+            if (chrome.runtime.lastError) {
+                console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
             }
-            chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : formattedStat}, {}, (_response)=>{
-                if (chrome.runtime.lastError) {
-                    console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
-                }
-            })
-        },
-        ()=> {
-            console.log('No active tab!');
-        });
+        })
+    };
+    let logIfNoActiveTab = ()=> {
+        console.log('No active tab!');
+    };
+    operationOnActiveTab( 
+        showStatistiTableOnActivePath,
+        logIfNoActiveTab);
 }
 
 function onDayChanged() {

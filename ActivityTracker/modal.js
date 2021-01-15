@@ -165,12 +165,10 @@ window.onblur = function() {
 }
 
 document.onmouseenter = function() {
-    chrome.runtime.sendMessage(null, {name: "setFocus"});
+    notifyFocusChange(true);
 }
 document.onmouseleave = function() {
-    if(!document.hasFocus()) {
-        notifyFocusChange(false);
-    }
+    notifyFocusChange(false);
 }
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {

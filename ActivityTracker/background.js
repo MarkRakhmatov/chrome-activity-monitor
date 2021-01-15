@@ -357,23 +357,6 @@ function checkDayChange() {
     });
 }
 
-function SetFocusOnWnd() {
-    chrome.windows.getCurrent({populate: true}, (currentWnd) => {
-        if (chrome.runtime.lastError) {
-            console.warn("Failed to get current window " + chrome.runtime.lastError.message);
-            return;
-        }
-        if(currentWnd.active) {
-            return;
-        }
-        chrome.windows.update(currentWnd.id, {focused: true}, (wnd) => {
-            if (chrome.runtime.lastError) {
-                console.warn("Failed to get current window " + chrome.runtime.lastError.message);
-            }
-        });
-    });
-}
-
 function setListeners() {
     chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         console.log('onUpdated');
@@ -403,9 +386,6 @@ function setListeners() {
         }
         else if (message.name === "getStatistics") {
             response(window.statisticsHandler.getFormattedMap());
-        }
-        else if (message.name === "setFocus") {
-            SetFocusOnWnd();
         }
     });
 }

@@ -38,9 +38,7 @@ function getActiveTab() {
         chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
             const activeTab = tabs[0];
             if (!activeTab) {
-                if(reject) {
-                    reject();
-                }
+                reject();
                 return;
             }
             resolve(activeTab);
@@ -55,9 +53,7 @@ class StorageWrapper {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
-                    if(resolve) {
-                        resolve();
-                    }
+                    resolve();
                 }
             });
         });
@@ -79,9 +75,7 @@ class StorageWrapper {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
-                    if(resolve) {
-                        resolve();
-                    }
+                    resolve();
                 }
             });
         });

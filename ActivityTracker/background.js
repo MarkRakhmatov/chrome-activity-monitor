@@ -43,6 +43,46 @@ function getActiveTab() {
     });
 }
 
+class StorageWrapper {
+    set(key, value) {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.set({[key]: value}, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    if(resolve) {
+                        resolve();
+                    }
+                }
+            });
+        });
+    }
+    get(key) {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.get([key], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+    remove(key) {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.remove([key], () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    if(resolve) {
+                        resolve();
+                    }
+                }
+            });
+        });
+    }
+}
+
 class Duration {
     constructor(milliseconds) {
         const msInSeconds = 1000;
@@ -110,46 +150,6 @@ class Timer {
     }
 }
 
-class StorageWrapper {
-    set(key, value) {
-        return new Promise((resolve, reject) => {
-            chrome.storage.local.set({[key]: value}, () => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    if(resolve) {
-                        resolve();
-                    }
-                }
-            });
-        });
-    }
-    get(key) {
-        return new Promise((resolve, reject) => {
-            chrome.storage.local.get([key], (result) => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
-    }
-    remove(key) {
-        return new Promise((resolve, reject) => {
-            chrome.storage.local.remove([key], () => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    if(resolve) {
-                        resolve();
-                    }
-                }
-            });
-        });
-    }
-}
-
 
 // contains info about url hostname, opened tabs and
 class HostTimeData {
@@ -170,6 +170,9 @@ class HostTimeData {
     getActiveTimeDuration() {
         return this.timer.getElapsedTimeDuration();
     }
+    getActiveTimeMs() {
+        return this.timer.getElapsedMilliseconds();
+    }
     addTab(tabId) {
         this.tabIds.add(tabId);
     }
@@ -181,30 +184,29 @@ class HostTimeData {
         this.timer.start();
         this.tabIds.clear();
     }
-    toJson() {
-        return JSON.stringify({time: this.timer.getElapsedMilliseconds()});
+    toObject() {
+        return {time: this.timer.getElapsedMilliseconds()};
     }
-    fromJson(serialValue) {
-        const deserialized = JSON.parse(serialValue);
-        this.timer.fromMilliseconds(deserialized.time);
+    fromObject(serialValue) {
+        this.timer.fromMilliseconds(serialValue.time);
         this.tabIds.clear();
     }
 }
 
 class StatisticsHandler {
-    constructor() {
+    constructor(afterHostTimerUpdate) {
+        this.afterHostTimerUpdate = afterHostTimerUpdate;
         this.hostnameToTimeData = {};
         this.lastHostname = '';
         this.currentTab = 0;
         this.isDocumentFocused = true;
     }
-
     initFromSerialMap(serialMap) {
         this.hostnameToTimeData = {};
         this.lastHostname = '';
         for (let key in serialMap) {
             let hostData = new HostTimeData();
-            hostData.fromJson(serialMap[key]);
+            hostData.fromObject(serialMap[key]);
             this.hostnameToTimeData[key] = hostData;
         }
     }
@@ -232,17 +234,12 @@ class StatisticsHandler {
         }
         const { url, id } = tab;
         const hostname = getHostnameOrUrl(url);
-    
-        if(chrome.runtime.id === hostname) {
-            console.log('Skip handling of events from our extension!');
-            return;
-        }
-       this.updateHostTimeData(hostname, id);
+        this.updateHostTimeData(hostname, id);
     }
     updateActiveTabData() {
         getActiveTab().then(this.updateStatisticsFromTab.bind(this), this.deactivateCurrentHost.bind(this));
     }
-    deactivate(tabId) {
+    deactivateTab(tabId) {
         console.log('Deactivate statistics timer for tabId: ' + tabId);
         for (let host in this.hostnameToTimeData) {
             const value = this.hostnameToTimeData[host];
@@ -281,6 +278,13 @@ class StatisticsHandler {
     getLastHostname() {
         return this.lastHostname;
     }
+    getActiveTimeForHostname(hostname) {
+        let hostData = this.hostnameToTimeData[hostname] ;
+        if(!hostData) {
+            return 0;
+        }
+        return hostData.getActiveTimeMs();
+    }
     getFormattedMap()
     {
         let hostToTimestamp = {};
@@ -293,9 +297,9 @@ class StatisticsHandler {
     getMapForSerialization() {
         let hostnameToJson = {};
         for (let key in this.hostnameToTimeData) {
-            hostnameToJson[key] = this.hostnameToTimeData[key].toJson();
+            hostnameToJson[key] = this.hostnameToTimeData[key].toObject();
         }
-        return JSON.stringify(hostnameToJson);
+        return hostnameToJson;
     }
     getSortedDataMap() {
         return Object.entries(this.hostnameToTimeData).sort((a, b) => b[1].timer.getElapsedMilliseconds() - a[1].timer.getElapsedMilliseconds());
@@ -353,10 +357,91 @@ class CommunicationHandler {
     }
 }
 
+class AccessController {
+    constructor() {
+        this.sitesBlackList = new Set();
+        this.sitesWhiteList = {};
+        this.sitesIgnoreList = new Set([chrome.runtime.id, "newtab"]);
+        this.sitesWithLimitedAccess=  {};
+        chrome.webRequest.onBeforeRequest.addListener(
+            this.onBeforeRequest.bind(this),
+            {urls: ["*://*/*"]},
+            ['blocking']);
+    }
+    onBeforeRequest(details) {
+        let hostname = getHostname(details.initiator);
+        if(Object.entries(this.sitesWhiteList).length > 0 && !this.sitesWhiteList[hostname]) {
+            return {cancel: true};
+        }
+        if(this.sitesBlackList.has(hostname)) {
+            return {cancel: true};
+        }
+        let maxAccessTime = this.sitesWithLimitedAccess[hostname];
+        if(!maxAccessTime) {
+            return {cancel: false};
+        }
+        let activeHostnameTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
+        if(activeHostnameTime > maxAccessTime) {
+            return {cancel: true};
+        }
+        return {cancel: false};
+    }
+    updateTimeLimits(timeLimits) {
+        this.sitesWithLimitedAccess = timeLimits;
+        // update blacklist
+        for(let site of this.sitesBlackList) {
+            if(!this.sitesWithLimitedAccess[site]) {
+                this.sitesBlackList.delete(site);
+            }
+        }
+    }
+    checkAccess(host, timeMs) {
+        let timeLimit = this.sitesWithLimitedAccess[host];
+        if(timeLimit && timeMs > timeLimit) {
+            this.sitesBlackList.add(host);
+        }
+    }
+}
+
+class SettingsHandler {
+    constructor(onSettingsUpdateCallback) {
+        this.onSettingsUpdate = onSettingsUpdateCallback;
+        this.storageKeys = { settings : {
+            key : 'settings',
+            timeLimits : {
+                key: 'timeLimits'}}};
+        this.storage = new StorageWrapper();
+        chrome.storage.onChanged.addListener(this.onStorageChange.bind(this));
+        this.init();  
+    }
+    init() {
+        let onSuccess = (result) => {
+            this.onSettingsUpdate(result[this.storageKeys.settings.key][this.storageKeys.settings.timeLimits.key]);
+        };
+        let onFail = (error) => {
+            console.warn('Failed to get settings: ' + error.message);
+        };
+        this.storage.get(this.storageKeys.settings.key).then(onSuccess, onFail);
+    }
+    onStorageChange(changes, areaName) {
+        if(areaName !== 'local') {
+            return;
+        }
+        let settings = changes[this.storageKeys.settings.key];
+        if(!settings) {
+            return;
+        }
+        let newTimeLimits =  settings['newValue'][this.storageKeys.settings.timeLimits.key];
+        this.onSettingsUpdate(newTimeLimits);
+    }
+}
+
 class EventHandler {
     constructor() {
         this.storageKeys = {statistics: 'stat', day: 'day'};
         this.storage = new StorageWrapper();
+        this.accessController = new AccessController();
+        this.settings = new SettingsHandler(this.accessController.updateTimeLimits.bind(this.accessController));
         this.InitStatistics();
         this.communicationHandler = new CommunicationHandler(this.statisticsHandler);
         this.setListeners();
@@ -367,10 +452,8 @@ class EventHandler {
             if (!result.stat) {
                 return;
             }
-    
-            let serializedMap = JSON.parse(result.stat);
-            if (serializedMap) {
-                this.statisticsHandler.initFromSerialMap(serializedMap);
+            if (result.stat) {
+                this.statisticsHandler.initFromSerialMap(result.stat);
             }
         },
         (error)=>{
@@ -383,12 +466,15 @@ class EventHandler {
     }
     onTabActivated(activeInfo) {
         console.log('onActivated');
-        chrome.tabs.get(activeInfo.tabId, this.statisticsHandler.updateStatisticsFromTab.bind(this.statisticsHandler));
+        let checkActiveTab = (tab) => {
+            this.statisticsHandler.updateStatisticsFromTab(tab);
+        };
+        chrome.tabs.get(activeInfo.tabId, checkActiveTab);
         this.storage.set(this.storageKeys.statistics, this.statisticsHandler.getMapForSerialization());
     }
     onTabRemoved(tabId, _removeInfo) {
         console.log('onRemoved ' + tabId);
-        this.statisticsHandler.deactivate(tabId);
+        this.statisticsHandler.deactivateTab(tabId);
         this.storage.set(this.storageKeys.statistics, this.statisticsHandler.getMapForSerialization());
     }
     onDayChanged() {

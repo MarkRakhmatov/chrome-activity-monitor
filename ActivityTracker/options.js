@@ -1,4 +1,5 @@
 (function () {
+    const STORAGE_SETTINGS_KEY = 'settings';
     const STORAGE_KEY = 'timeLimits';
     const addNewUrlBtn = document.getElementById('add-new-url');
     const form = document.forms.namedItem('newUrlForm');
@@ -85,18 +86,18 @@
     }
 
     function removeHostnameFromStorage(hostname) {
-        chrome.storage.local.get({ [STORAGE_KEY]: {} }, (oldValue) => {
-            const newValue = oldValue[STORAGE_KEY];
+        chrome.storage.local.get({ [STORAGE_SETTINGS_KEY]: { [STORAGE_KEY]: {} }}, (oldValue) => {
+            const newValue = oldValue[STORAGE_SETTINGS_KEY][STORAGE_KEY];
             delete newValue[hostname];
-            chrome.storage.local.set({ [STORAGE_KEY]: newValue }, () => {
+            chrome.storage.local.set({[STORAGE_SETTINGS_KEY] : { [STORAGE_KEY]: newValue }}, () => {
                 updateUi(newValue);
             });
         });
     }
 
     function renderInitialData() {
-        chrome.storage.local.get({ [STORAGE_KEY]: {} }, (oldValue) => {
-            updateUi(oldValue[STORAGE_KEY]);
+        chrome.storage.local.get({ [STORAGE_SETTINGS_KEY]:{ [STORAGE_KEY]: {} } }, (oldValue) => {
+            updateUi(oldValue[STORAGE_SETTINGS_KEY][STORAGE_KEY]);
         });
     }
 
@@ -106,11 +107,11 @@
             const { hostname, time } = hostnameTimeData;
             const timeMs = timeStrToMs(time);
 
-            chrome.storage.local.get({ [STORAGE_KEY]: {} }, (oldValue) => {
-                const newValue = oldValue[STORAGE_KEY];
+            chrome.storage.local.get({[STORAGE_SETTINGS_KEY]: { [STORAGE_KEY]: {} }}, (oldValue) => {
+                const newValue = oldValue[STORAGE_SETTINGS_KEY][STORAGE_KEY];
                 newValue[hostname] = timeMs;
 
-                chrome.storage.local.set({ [STORAGE_KEY]: newValue }, () => {
+                chrome.storage.local.set({[STORAGE_SETTINGS_KEY]: { [STORAGE_KEY]: newValue }}, () => {
                     resolve(newValue);
                 });
             });

@@ -193,8 +193,7 @@ class HostTimeData {
 }
 
 class StatisticsHandler {
-    constructor(afterHostTimerUpdate) {
-        this.afterHostTimerUpdate = afterHostTimerUpdate;
+    constructor() {
         this.hostnameToTimeData = {};
         this.lastHostname = '';
         this.currentTab = 0;

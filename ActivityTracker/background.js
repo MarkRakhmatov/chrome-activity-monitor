@@ -414,7 +414,11 @@ class SettingsHandler {
     }
     init() {
         let onSuccess = (result) => {
-            this.onSettingsUpdate(result[this.storageKeys.settings.key][this.storageKeys.settings.timeLimits.key]);
+            if(!Object.entries(result).length) {
+                this.onSettingsUpdate({});
+            } else {
+                this.onSettingsUpdate(result[this.storageKeys.settings.key][this.storageKeys.settings.timeLimits.key]);
+            }
         };
         let onFail = (error) => {
             console.warn('Failed to get settings: ' + error.message);

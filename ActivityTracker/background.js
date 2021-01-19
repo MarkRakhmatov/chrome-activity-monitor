@@ -1,6 +1,11 @@
 (function() {
 function getHostname(urlString) {
-    return new URL(urlString).hostname;
+    try {
+        return new URL(urlString).hostname;
+    } catch(e) {
+        console.log(`Failed to construct url from '${urlString}'. ${e.name}: ${e.message}`);
+        return '';
+    }
 }
 function getHostnameOrUrl(urlString) {
     let hostname = getHostname(urlString);

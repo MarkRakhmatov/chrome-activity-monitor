@@ -198,6 +198,7 @@ class StatisticsHandler {
         this.lastHostname = '';
         this.currentTab = 0;
         this.isDocumentFocused = true;
+        this.sitesIgnoreList = new Set([chrome.runtime.id, 'newtab', 'extensions']);
     }
     initFromSerialMap(serialMap) {
         this.hostnameToTimeData = {};
@@ -211,6 +212,9 @@ class StatisticsHandler {
     updateHostTimeData(hostname, tabId) {
         if(!this.isDocumentFocused) {
             console.log('Document is not focused, skip update');
+            return;
+        }
+        if(this.sitesIgnoreList.has(hostname)) {
             return;
         }
         if (this.lastHostname.length !== 0 && hostname !== this.lastHostname) {
@@ -359,7 +363,6 @@ class AccessController {
     constructor() {
         this.sitesBlackList = new Set();
         this.sitesWhiteList = {};
-        this.sitesIgnoreList = new Set([chrome.runtime.id, "newtab"]);
         this.sitesWithLimitedAccess=  {};
         chrome.webRequest.onBeforeRequest.addListener(
             this.onBeforeRequest.bind(this),

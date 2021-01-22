@@ -335,8 +335,7 @@ class CommunicationHandler {
         }
         this.messageHandlers[message.name](message, sender, response);
     }
-    showModal()
-    {
+    showModal() {
         let showStatisticTableOnActiveTab = (activeTab)=> {
             let formattedStat = this.statisticsHandler.getFormattedMap();
             if(formattedStat === "{}")
@@ -357,13 +356,22 @@ class CommunicationHandler {
             showStatisticTableOnActiveTab,
             logIfNoActiveTab);
     }
+    
+    showAccessBlockingAlert(alertInfo) {
+        if(this.lastAlertTime && Date.now() - this.lastAlertTime < 5000) {
+            return;
+        }
+        alert(`Access to ${alertInfo.hostname} blocked! Reason: ${alertInfo.reason}`);
+        this.lastAlertTime = Date.now();
+    }
 }
 
 class AccessController {
-    constructor() {
+    constructor(onAccessBlockedCallback) {
         this.sitesBlackList = new Set();
         this.sitesWhiteList = {};
-        this.sitesWithLimitedAccess=  {};
+        this.sitesWithLimitedAccess = {};
+        this.onAccessBlocked = onAccessBlockedCallback;
         chrome.webRequest.onBeforeRequest.addListener(
             this.onBeforeRequest.bind(this),
             {urls: ["*://*/*"]},
@@ -372,9 +380,17 @@ class AccessController {
     onBeforeRequest(details) {
         let hostname = getHostname(details.initiator);
         if(Object.entries(this.sitesWhiteList).length > 0 && !this.sitesWhiteList[hostname]) {
+            this.onAccessBlocked({
+                hostname: hostname,
+                reason: `${hostname} does not belong to the list of allowed sites!`
+            });
             return {cancel: true};
         }
         if(this.sitesBlackList.has(hostname)) {
+            this.onAccessBlocked({
+                hostname: hostname,
+                reason: `${hostname} belong to the list of blocked sites!`
+            });
             return {cancel: true};
         }
         let maxAccessTime = this.sitesWithLimitedAccess[hostname];
@@ -383,6 +399,10 @@ class AccessController {
         }
         let activeHostnameTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
         if(activeHostnameTime > maxAccessTime) {
+            this.onAccessBlocked({
+                hostname: hostname,
+                reason: `${hostname} time limit - ${new Duration(maxAccessTime)} exceeeded!`
+            });
             return {cancel: true};
         }
         return {cancel: false};
@@ -394,12 +414,6 @@ class AccessController {
             if(!this.sitesWithLimitedAccess[site]) {
                 this.sitesBlackList.delete(site);
             }
-        }
-    }
-    checkAccess(host, timeMs) {
-        let timeLimit = this.sitesWithLimitedAccess[host];
-        if(timeLimit && timeMs > timeLimit) {
-            this.sitesBlackList.add(host);
         }
     }
 }
@@ -445,10 +459,10 @@ class EventHandler {
     constructor() {
         this.storageKeys = {statistics: 'stat', day: 'day'};
         this.storage = new StorageWrapper();
-        this.accessController = new AccessController();
-        this.settings = new SettingsHandler(this.accessController.updateTimeLimits.bind(this.accessController));
         this.InitStatistics();
         this.communicationHandler = new CommunicationHandler(this.statisticsHandler);
+        this.accessController = new AccessController(this.communicationHandler.showAccessBlockingAlert.bind(this.communicationHandler));
+        this.settings = new SettingsHandler(this.accessController.updateTimeLimits.bind(this.accessController));
         this.setListeners();
     }
     InitStatistics() {

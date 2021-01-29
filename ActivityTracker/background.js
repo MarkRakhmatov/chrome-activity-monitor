@@ -401,7 +401,7 @@ class AccessController {
         if(activeHostnameTime > maxAccessTime) {
             this.onAccessBlocked({
                 hostname: hostname,
-                reason: `${hostname} time limit - ${new Duration(maxAccessTime)} exceeeded!`
+                reason: `${hostname} time limit - ${new Duration(maxAccessTime)} exceeded!`
             });
             return {cancel: true};
         }

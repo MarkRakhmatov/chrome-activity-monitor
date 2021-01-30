@@ -60,15 +60,15 @@
     </head>
     <template id="list-with-time-period-row-template">
         <tr>
-            <td>www.youtube.com</td>
-            <td>11:00</td>
-            <td>20:00</td>
-            <td>Every day</td>
+            <td name="site"></td>
+            <td name="timeStart"></td>
+            <td name="timeEnd"></td>
+            <td name="days"></td>
             <td>
-                <div class="settings-table-actions-style">
-                    <button name="change-url" class="action-button"><span>Change</span></button>
-                    <button name="duplicate-url" class="action-button"><span>Duplicate</span></button>
-                    <button name="remove-new-url" class="action-button"><span>Remove</span></button>
+                <div name="settings-table-actions" class="settings-table-actions-style">
+                    <button name="change" class="action-button"><span>Change</span></button>
+                    <button name="duplicate" class="action-button"><span>Duplicate</span></button>
+                    <button name="remove" class="action-button"><span>Remove</span></button>
                 </div>
             </td>
         </tr>
@@ -83,65 +83,65 @@
                 <th>Days</th>
                 <th>Actions</th>
             </thead>
-            <tr class="settings-row">
-                <td>
-                    <input
-                        type="text"
-                        placeholder="Add new URL"
-                        name="hostnameValue"
-                        pattern="(?:\w+\.)*\w+$"
-                        required
-                    >
-                </td>
-                <td>
-                    <input
-                        type="time"
-                        min="00:01"
-                        name="timeStart"
-                        required
-                    >
-                </td>
-                <td>
-                    <input
-                        type="time"
-                        min="00:01"
-                        name="timeEnd"
-                        required
-                    >
-                </td>
-                <td class="days-checkboxes">
-                    <div>
-                        <input type="checkbox" name="Every day">Every day<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Sunday">Sunday<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Monday">Monday<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Tuesday">Tuesday<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Wednesday">Wednesday<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Thursday">Thursday<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Friday">Friday<br>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="Saturday">Saturday<br>
-                    </div>
-                </td>
-                <td>
-                    <div class="settings-table-actions-style">
-                        <button name="add-new-url"><span>Add</span></button>
-                    </div>
-                </td>
-            </tr>
             <tbody>
+                <tr class="settings-row">
+                    <td>
+                        <input
+                            type="text"
+                            placeholder="Add new URL"
+                            name="site"
+                            pattern="(?:\w+\.)*\w+$"
+                            required
+                        >
+                    </td>
+                    <td>
+                        <input
+                            type="time"
+                            min="00:01"
+                            name="timeStart"
+                            required
+                        >
+                    </td>
+                    <td>
+                        <input
+                            type="time"
+                            min="00:01"
+                            name="timeEnd"
+                            required
+                        >
+                    </td>
+                    <td class="days-checkboxes">
+                        <div>
+                            <input type="checkbox" name="Every day">Every day<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Sunday">Sunday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Monday">Monday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Tuesday">Tuesday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Wednesday">Wednesday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Thursday">Thursday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Friday">Friday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Saturday">Saturday<br>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="settings-table-actions-style">
+                            <button name="add-new-url"><span>Add</span></button>
+                        </div>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </template>

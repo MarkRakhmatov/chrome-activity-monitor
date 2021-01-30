@@ -81,9 +81,9 @@ class SectionWithTimePeriod {
         listNode.firstElementChild.setAttribute('name', this.sectionName)
         this.daysCheckBoxes = new DaysCheckboxes(listNode);
         this.prepareSection(listNode, sectionName);
-
+        this.settingsTable = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
         this.inputs = {
-            hostnameValue : this.rootNode.querySelector('input[name="hostnameValue"]'),
+            site : this.rootNode.querySelector('input[name="site"]'),
             timeStart : this.rootNode.querySelector('input[name="timeStart"]'),
             timeEnd : this.rootNode.querySelector('input[name="timeEnd"]')
         }
@@ -101,25 +101,89 @@ class SectionWithTimePeriod {
         
         this.listWithTimePeriodNode = this.rootNode.appendChild(newNode);
     }
+    setCellValue(row, name, value) {
+        let cell = row.querySelector(`[name="${name}"]`);
+        cell.innerHTML = value;
+    }
+    getCellData(row, name) {
+        let cell = row.querySelector(`[name="${name}"]`);
+        return cell.innerHTML;
+    }
+    changeUrlHandler(event) {
+
+    }
+    duplicateUrlHandler(event) {
+        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        let newRowData = {};
+        
+        let siteName = 'site';
+        newRowData[siteName] = this.getCellData(originalRow, siteName);
+
+        let timeStartName = 'timeStart';
+        newRowData[timeStartName] = this.getCellData(originalRow, timeStartName);
+
+        let timeEndName = 'timeEnd';
+        newRowData[timeEndName] = this.getCellData(originalRow, timeEndName);
+ 
+        let daysName = 'days';
+        newRowData[daysName] = this.getCellData(originalRow, daysName);
+        
+        this.addNewRow(newRowData);
+    }
+    removeUrlHandler(event) {
+        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        let index = originalRow.rowIndex;
+        if(!index)
+        {
+            console.log('invalidRow');
+            return;
+        }
+        this.settingsTable.deleteRow(index);
+    }
+    setEventsHandler(actionsContainer) {
+        let changeUrlBtn = actionsContainer.querySelector('[name="change"]');
+        changeUrlBtn.onclick = this.changeUrlHandler.bind(this);
+
+        let duplicateBtn = actionsContainer.querySelector('[name="duplicate"]');
+        duplicateBtn.onclick = this.duplicateUrlHandler.bind(this);
+
+        let removeBtn = actionsContainer.querySelector('[name="remove"]');
+        removeBtn.onclick = this.removeUrlHandler.bind(this);
+    }
+
+    addNewRow(newRowData) {
+        let newRow = this.createNodeFromTemplate(document.getElementById('list-with-time-period-row-template'));
+        let siteName = 'site';
+        this.setCellValue(newRow, siteName, newRowData[siteName]);
+
+        let timeStartName = 'timeStart';
+        this.setCellValue(newRow, timeStartName, newRowData[timeStartName]);
+
+        let timeEndName = 'timeEnd';
+        this.setCellValue(newRow, timeEndName, newRowData[timeEndName]);
+ 
+        let daysName = 'days';
+        this.setCellValue(newRow, daysName, newRowData[daysName]);
+
+        let actionsContainer = newRow.querySelector('[name="settings-table-actions"]')
+        this.setEventsHandler(actionsContainer);
+        let body = this.settingsTable.querySelector('tbody');
+        body.appendChild(newRow);
+    }
     onAddNewSite() {
-        let updateData = {};
+        let newRowData = {};
         for(let [key, value] of Object.entries(this.inputs)) {
             if (!value.checkValidity()) {
                 value.reportValidity();
                 return;
             }
-            updateData[value.name] = value.value;
+            newRowData[value.name] = value.value;
         }
 
-        let table = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
-        let newRow = this.createNodeFromTemplate(document.getElementById('list-with-time-period-row-template'));
-        
-        let body = table.querySelector('tbody');
-        body.appendChild(newRow);
-
-        updateData['days'] = this.daysCheckBoxes.getCheckedDays();
+        newRowData['days'] = this.daysCheckBoxes.getCheckedDays().join(', ');
+        this.addNewRow(newRowData)
         let actionType = 'add';
-        this.onSectionUpdate(updateData, actionType);
+        this.onSectionUpdate(newRowData, actionType);
     }
 }
 

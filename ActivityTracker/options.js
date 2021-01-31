@@ -35,21 +35,29 @@ class StorageWrapper {
         });
     }
 }
+
+function createNodeFromTemplate(template) {
+    let newNode = document.importNode(template.content, true);
+    return newNode;
+}
+
 class DaysCheckboxes {
     constructor(parentNode) {
         this.everyDayCheckbox = parentNode.querySelector('input[name="Every day"]');
+        this.everyDayCheckbox.setCustomValidity("Select at least one day!");
         this.everyDayCheckbox.onclick = this.onEveryDayClicked.bind(this);
         this.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        this.checkboxes = [];
+        this.checkboxes = {};
         for(let day of this.days) {
             let dayCheckBox = parentNode.querySelector(`input[name="${day}"]`);
             dayCheckBox.onclick = this.onDayCheckboxClicked.bind(this);
-            this.checkboxes.push(dayCheckBox);
+            this.checkboxes[day] = dayCheckBox;
         }
     }
     onEveryDayClicked(_event) {
-        for(let dayCheckBox of this.checkboxes) {
-            dayCheckBox.checked = true;
+        let allDaysValue =this.everyDayCheckbox.checked;
+        for(let [day, dayCheckBox] of Object.entries(this.checkboxes)) {
+            dayCheckBox.checked = allDaysValue;
         }
     }
     onDayCheckboxClicked(event) {
@@ -58,117 +66,81 @@ class DaysCheckboxes {
             this.everyDayCheckbox.checked = false;
         }
     }
+    setInputs(daysArray) {
+        this.cleanUp();
+        if(daysArray[0] == 'Every day') {
+            this.everyDayCheckbox.checked = true;
+            this.onEveryDayClicked();
+            return;
+        }
+        for(let day of daysArray) {
+            this.checkboxes[day].checked = true;
+        }
+    }
+    cleanUp() {
+        this.everyDayCheckbox.checked = false;
+        this.onEveryDayClicked();
+    }
     getCheckedDays() {
         if(this.everyDayCheckbox.checked) {
             return ['Every day'];
         }
         let days = [];
-        for(let checkbox of this.checkboxes) {
+        for(let [day, checkbox] of Object.entries(this.checkboxes)) {
             if(checkbox.checked) {
                 days.push(checkbox.name);
             }
         }
         return days;
     }
+    reportValidity() {
+        this.everyDayCheckbox.reportValidity();
+    }
 }
 
-class SectionWithTimePeriod {
-    constructor(sectionName) {
-        this.sectionName = sectionName;
-        this.rootNode = document.getElementById('settings-container');
-        let listWithTimePeriodTemplate = document.getElementById('list-with-time-period-template');
-        let listNode = this.createNodeFromTemplate(listWithTimePeriodTemplate);
-        listNode.firstElementChild.setAttribute('name', this.sectionName)
-        this.daysCheckBoxes = new DaysCheckboxes(listNode);
-        this.prepareSection(listNode, sectionName);
-        this.settingsTable = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
-        this.inputs = {
-            site : this.rootNode.querySelector('input[name="site"]'),
-            timeStart : this.rootNode.querySelector('input[name="timeStart"]'),
-            timeEnd : this.rootNode.querySelector('input[name="timeEnd"]')
+function highlight(element){
+    let defaultBG = element.style.backgroundColor;
+    let defaultTransition = element.style.transition;
+
+    element.style.transition = "background 1s";
+    element.style.backgroundColor = "#FDFF47";
+    setTimeout(function()
+    {
+        element.style.backgroundColor = defaultBG;
+        setTimeout(function() {
+            element.style.transition = defaultTransition;
+        }, 1000);
+    }, 1000);
+}
+
+class SettingsGeneratingRow {
+    constructor(table, inputsNames, onRowAddadCallback) {
+        this.inputsNames = inputsNames;
+        this.table = table;
+        this.inputs = {};
+        for(let inputName of this.inputsNames) {
+            this.inputs[inputName] = this.table.querySelector(`input[name="${inputName}"]`);
         }
-        this.onSectionUpdate = null;
-    }
-    createNodeFromTemplate(template) {
-        let newNode = document.importNode(template.content, true);
-        return newNode;
-    }
-    prepareSection(newNode, sectionName) {
-        let caption = newNode.querySelector('caption[name="list-type"]');
-        caption.innerHTML = sectionName;
-        let addButton = newNode.querySelector('button[name="add-new-url"]');
+        this.table.querySelector('[class="days-checkboxes"]');
+        this.daysCheckBoxes = new DaysCheckboxes(table);
+        
+        let addButton = table.querySelector('button[name="add-new-url"]');
         addButton.onclick = this.onAddNewSite.bind(this);
-        
-        this.listWithTimePeriodNode = this.rootNode.appendChild(newNode);
-    }
-    setCellValue(row, name, value) {
-        let cell = row.querySelector(`[name="${name}"]`);
-        cell.innerHTML = value;
-    }
-    getCellData(row, name) {
-        let cell = row.querySelector(`[name="${name}"]`);
-        return cell.innerHTML;
-    }
-    changeUrlHandler(event) {
 
+        this.onRowAddadCallback = onRowAddadCallback;
     }
-    duplicateUrlHandler(event) {
-        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
-        let newRowData = {};
-        
-        let siteName = 'site';
-        newRowData[siteName] = this.getCellData(originalRow, siteName);
-
-        let timeStartName = 'timeStart';
-        newRowData[timeStartName] = this.getCellData(originalRow, timeStartName);
-
-        let timeEndName = 'timeEnd';
-        newRowData[timeEndName] = this.getCellData(originalRow, timeEndName);
- 
-        let daysName = 'days';
-        newRowData[daysName] = this.getCellData(originalRow, daysName);
-        
-        this.addNewRow(newRowData);
-    }
-    removeUrlHandler(event) {
-        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
-        let index = originalRow.rowIndex;
-        if(!index)
-        {
-            console.log('invalidRow');
-            return;
+    
+    setInputsData(newRowData) {
+        for(let inputName of this.inputsNames) {
+            this.inputs[inputName].value = newRowData[inputName];
         }
-        this.settingsTable.deleteRow(index);
+        this.daysCheckBoxes.setInputs(newRowData.days.split(',\n'));
     }
-    setEventsHandler(actionsContainer) {
-        let changeUrlBtn = actionsContainer.querySelector('[name="change"]');
-        changeUrlBtn.onclick = this.changeUrlHandler.bind(this);
-
-        let duplicateBtn = actionsContainer.querySelector('[name="duplicate"]');
-        duplicateBtn.onclick = this.duplicateUrlHandler.bind(this);
-
-        let removeBtn = actionsContainer.querySelector('[name="remove"]');
-        removeBtn.onclick = this.removeUrlHandler.bind(this);
-    }
-
-    addNewRow(newRowData) {
-        let newRow = this.createNodeFromTemplate(document.getElementById('list-with-time-period-row-template'));
-        let siteName = 'site';
-        this.setCellValue(newRow, siteName, newRowData[siteName]);
-
-        let timeStartName = 'timeStart';
-        this.setCellValue(newRow, timeStartName, newRowData[timeStartName]);
-
-        let timeEndName = 'timeEnd';
-        this.setCellValue(newRow, timeEndName, newRowData[timeEndName]);
- 
-        let daysName = 'days';
-        this.setCellValue(newRow, daysName, newRowData[daysName]);
-
-        let actionsContainer = newRow.querySelector('[name="settings-table-actions"]')
-        this.setEventsHandler(actionsContainer);
-        let body = this.settingsTable.querySelector('tbody');
-        body.appendChild(newRow);
+    cleanupInputs() {
+        for(let inputName of this.inputsNames) {
+            this.inputs[inputName].value = '';
+        }
+        this.daysCheckBoxes.cleanUp();
     }
     onAddNewSite() {
         let newRowData = {};
@@ -180,22 +152,151 @@ class SectionWithTimePeriod {
             newRowData[value.name] = value.value;
         }
 
-        newRowData['days'] = this.daysCheckBoxes.getCheckedDays().join(', ');
-        this.addNewRow(newRowData)
-        let actionType = 'add';
-        this.onSectionUpdate(newRowData, actionType);
+        newRowData['days'] = this.daysCheckBoxes.getCheckedDays().join(',\n');
+        if(!newRowData['days'].length) {
+            this.daysCheckBoxes.reportValidity();
+            return;
+        }
+
+        this.onRowAddadCallback(newRowData, 2);
+        this.cleanupInputs();
+        this.daysCheckBoxes.cleanUp();
+    }
+}
+
+class SectionWithTimePeriodBody {
+    constructor(cellNames, table,  settingsGeneratingRow) {
+        this.cellNames = cellNames;
+        this.settingsTable = table;
+        this.settingsGeneratingRow = settingsGeneratingRow;
+        this.buttonToHandler = {
+            change : this.changeUrlHandler.bind(this),
+            duplicate : this.duplicateUrlHandler.bind(this),
+            remove : this.removeUrlHandler.bind(this),
+        };
+    }
+    setCellValue(row, name, value) {
+        let cell = row.querySelector(`[name="${name}"]`);
+        cell.innerHTML = value;
+    }
+    getCellData(row, name) {
+        let cell = row.querySelector(`[name="${name}"]`);
+        let cellValue = cell.innerHTML;
+        if(!cellValue || !cellValue.length) {
+            throw 'Empty cell!';
+        }
+        return cellValue;
+    }
+    getRowData(row) {
+        let rowData = {};
+        
+        let siteName = 'site';
+        rowData[siteName] = this.getCellData(row, siteName);
+
+        let timeStartName = 'timeStart';
+        rowData[timeStartName] = this.getCellData(row, timeStartName);
+
+        let timeEndName = 'timeEnd';
+        rowData[timeEndName] = this.getCellData(row, timeEndName);
+ 
+        let daysName = 'days';
+        rowData[daysName] = this.getCellData(row, daysName);
+        return rowData;
+    }
+    removeRow(index) {
+        if(!index)
+        {
+            console.log('invalidRow');
+            return;
+        }
+        this.settingsTable.deleteRow(index);
+    }
+
+    changeUrlHandler(event) {
+        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        let newRowData = this.getRowData(originalRow);
+        this.settingsGeneratingRow.setInputsData(newRowData);
+        this.settingsTable.scrollIntoView();
+        highlight(this.settingsTable.querySelector('tr[name="add-new-site-row"]'));
+        this.removeRow(originalRow.rowIndex);
+    }
+    duplicateUrlHandler(event) {
+        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        try {
+            let newRowData = this.getRowData(originalRow);
+            this.addNewRow(newRowData, originalRow.rowIndex+1);
+        } catch (error) {
+            console.log('Failed to duplicate row!');
+        }
+    }
+    removeUrlHandler(event) {
+        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        this.removeRow(originalRow.rowIndex);
+    }
+    setEventHandlers(actionsContainer) {
+        for(let [buttonName, handler] of Object.entries(this.buttonToHandler)) {
+            let button = actionsContainer.querySelector(`[name="${buttonName}"]`);
+            button.onclick = handler;
+        }
+    }
+    addNewRow(newRowData, index) {
+        let newRow = createNodeFromTemplate(document.getElementById('list-with-time-period-row-template'));
+        
+        for(let cellName of this.cellNames) {
+            this.setCellValue(newRow, cellName, newRowData[cellName]);
+        }
+        let row = this.settingsTable.insertRow(index);
+        row.setAttribute('class', 'settings-row');
+        row.innerHTML = newRow.children[0].innerHTML;
+        let actionsContainer = row.querySelector('[name="settings-table-actions"]')
+        this.setEventHandlers(actionsContainer);
+        highlight(row);
+    }
+}
+
+
+class SectionWithTimePeriod {
+    constructor(sectionName) {
+        this.sectionName = sectionName;
+        let listWithTimePeriodTemplate = document.getElementById('list-with-time-period-template');
+        let listNode = createNodeFromTemplate(listWithTimePeriodTemplate);
+        listNode.querySelector('table[class="table-style"]').setAttribute('name', this.sectionName);
+        let caption = listNode.querySelector('caption[name="list-type"]');
+        caption.innerHTML = sectionName;
+        
+        this.rootNode = document.getElementById('settings-container');
+        this.listWithTimePeriodNode = this.rootNode.appendChild(listNode);
+        this.settingsTable = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
+        
+        let inputNames = ['site', 'timeStart', 'timeEnd'];
+        this.settingsGeneratingRow = new SettingsGeneratingRow(this.settingsTable, inputNames, this.addNewRow.bind(this))
+        
+        let cellNames = ['site', 'timeStart', 'timeEnd', 'days'];
+        this.settingsTableBody = new SectionWithTimePeriodBody(cellNames, this.settingsTable, this.settingsGeneratingRow);
+    }
+    getAllData() {
+        let tableDataSet = Set();
+        for(let row of this.settingsTable.rows) {
+            tableDataSet.push(this.getRowData(row));
+        }
+        let tableData = {};
+        for(let row in tableDataSet) {
+            tableData[row.rowIndex] = row;
+        }
+        return {[this.sectionName]: tableData};
+    }
+    addNewRow(rowData, index) {
+        this.settingsTableBody.addNewRow(rowData, index);
     }
 }
 
 class SectionUpdateHandler {
     constructor(settingSection) {
         this.settingsSection = settingSection;
-        this.settingsSection.onSectionUpdate = this.onSectionUpdate.bind(this);
         this.storage = new StorageWrapper();
     }
-    onSectionUpdate(updateData, actionType) {
-        // set updated data to storage
-        let dataToSave = { [this.settingsSection.sectionName]: updateData}
+    updateStorage() {
+
     }
 }
 
@@ -204,6 +305,9 @@ class Settings {
         let blackList = 'Black List';
         this.blackListSection = new SectionUpdateHandler(
             new SectionWithTimePeriod(blackList));
+        let whiteList = 'White List';
+        this.whiteListSection = new SectionUpdateHandler(
+            new SectionWithTimePeriod(whiteList));
     }
 }
     window.settingsView = new Settings();

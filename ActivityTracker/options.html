@@ -10,6 +10,7 @@
             .setting-section-caption {
                 caption-side: top;
                 text-align: center;
+                margin-top: 5px;
                 margin-bottom: 5px;
             }
             .settings-section {
@@ -18,7 +19,6 @@
             }
             .settings-row {
                 flex-direction: row;
-                margin-bottom: 15px;
                 text-align: center;
             }
             .input-section {
@@ -58,7 +58,7 @@
             }
         </style>
     </head>
-    <template id="list-with-time-period-row-template">
+    <template id="list-with-time-period-row-template" class="settings-row">
         <tr>
             <td name="site"></td>
             <td name="timeStart"></td>
@@ -73,7 +73,8 @@
             </td>
         </tr>
     </template>
-    <template id="list-with-time-period-template" class="settings-section">
+    <template id="list-with-time-period-template">
+        <div class="settings-section">
         <table class="table-style">
             <caption name="list-type" class="setting-section-caption"></caption>
             <thead>
@@ -84,10 +85,11 @@
                 <th>Actions</th>
             </thead>
             <tbody>
-                <tr class="settings-row">
+                <tr name="add-new-site-row" class="settings-row">
                     <td>
                         <input
                             type="text"
+                            style="width: 95%;"
                             placeholder="Add new URL"
                             name="site"
                             pattern="(?:\w+\.)*\w+$"
@@ -144,6 +146,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
     </template>
     <body>
         <div id="settings-container" class="settings-container">

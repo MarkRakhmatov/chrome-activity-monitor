@@ -390,7 +390,7 @@ class SettingsPeriodTable {
             + zeroPrefixedNum(currentdate.getMinutes(), 2);
         let currentDayOfWeek = getWeekDay();
         for(let [i, row] of Object.entries(this.rows)) {
-            if(row.days.includes(currentDayOfWeek)) {
+            if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
                 let inList = currentTimeofDay > row.timeStart && currentTimeofDay < row.timeEnd;
                 if(inList) {
                     rows.push(row);
@@ -425,7 +425,7 @@ class SettingsIntervalTable {
         }
         let currentDayOfWeek = getWeekDay();
         for(let row of rows) {
-            if(row.days.includes(currentDayOfWeek)) {
+            if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
                 let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
                 let activeTimeStr = new Duration(activeTime).toString();
                 let rowTime = row.timeInterval + ":00";

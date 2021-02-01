@@ -366,11 +366,97 @@ class CommunicationHandler {
     }
 }
 
+class SettingsPeriodTable {
+    constructor(name) {
+        this.name = name;
+        this.rows;
+    }
+    includes(site) {
+        let rows = this.getSiteActiveRows(site);
+        if(!rows.length) {
+            return {inList: false, isActiveRowsEmpty: true};
+        }
+        for(let row of rows) {
+            if(row.site === site) {
+                return {inList: true, isActiveRowsEmpty: false};
+            }
+        }
+        return {inList: false, isActiveRowsEmpty: false};
+    }
+    getSiteActiveRows(site) {
+        let rows = [];
+        let currentdate = new Date();
+        let currentTimeofDay = zeroPrefixedNum(currentdate.getHours(), 2) + ":"  
+            + zeroPrefixedNum(currentdate.getMinutes(), 2);
+        let currentDayOfWeek = getWeekDay();
+        for(let [i, row] of Object.entries(this.rows)) {
+            if(row.days.includes(currentDayOfWeek)) {
+                let inList = currentTimeofDay > row.timeStart && currentTimeofDay < row.timeEnd;
+                if(inList) {
+                    rows.push(row);
+                }
+            }
+        }
+        return rows;
+    }
+    update(tableData) {
+        let tableRows = tableData[this.name];
+        if(!tableRows) {
+            return;
+        }
+        let newValue = tableRows['newValue'];
+        if(newValue) {
+            this.rows = newValue;
+            return;
+        }
+        this.rows = tableRows;
+    }
+}
+
+class SettingsIntervalTable {
+    constructor(name) {
+        this.name = name;
+        this.rows;
+    }
+    includes(site) {
+        let rows = this.getSiteRows(site);
+        if(!rows.length) {
+            return false;
+        }
+        let currentDayOfWeek = getWeekDay();
+        for(let row of rows) {
+            if(row.days.includes(currentDayOfWeek)) {
+                let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
+                let activeTimeStr = new Duration(activeTime).toString();
+                let rowTime = row.timeInterval + ":00";
+                return  activeTimeStr > rowTime;
+            }
+        }
+        return false;
+    }
+    getSiteRows(site) {
+        let rows = [];
+        for(let [i, row] of Object.entries(this.rows)) {
+            if(row.site === site) {
+                rows.push(row);
+            }
+        }
+        return rows;
+    }
+    update(tableData) {
+        let tableRows = tableData[this.name];
+        if(!tableRows) {
+            return;
+        }
+        this.rows = tableRows;
+    }
+}
+
 class AccessController {
     constructor(onAccessBlockedCallback) {
-        this.sitesBlackList = new Set();
-        this.sitesWhiteList = {};
-        this.sitesWithLimitedAccess = {};
+        this.blackList = new SettingsPeriodTable('Black List');
+        this.whiteList = new SettingsPeriodTable('White List');
+        this.limitedAccessList = new SettingsIntervalTable('Limited Access List');
         this.onAccessBlocked = onAccessBlockedCallback;
         chrome.webRequest.onBeforeRequest.addListener(
             this.onBeforeRequest.bind(this),
@@ -379,79 +465,69 @@ class AccessController {
     }
     onBeforeRequest(details) {
         let hostname = getHostname(details.initiator);
-        if(Object.entries(this.sitesWhiteList).length > 0 && !this.sitesWhiteList[hostname]) {
+        if(hostname !== window.eventHandler.statisticsHandler.getLastHostname()) {
+            return;
+        }
+        let result = this.whiteList.includes(hostname);
+        if(!result.isActiveRowsEmpty && !result.inList) {
             this.onAccessBlocked({
                 hostname: hostname,
                 reason: `${hostname} does not belong to the list of allowed sites!`
             });
             return {cancel: true};
         }
-        if(this.sitesBlackList.has(hostname)) {
+        if(this.blackList.includes(hostname).inList) {
             this.onAccessBlocked({
                 hostname: hostname,
                 reason: `${hostname} belong to the list of blocked sites!`
             });
             return {cancel: true};
         }
-        let maxAccessTime = this.sitesWithLimitedAccess[hostname];
-        if(!maxAccessTime) {
-            return {cancel: false};
-        }
-        let activeHostnameTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
-        if(activeHostnameTime > maxAccessTime) {
+        if(this.limitedAccessList.includes(hostname)) {
             this.onAccessBlocked({
                 hostname: hostname,
-                reason: `${hostname} time limit - ${new Duration(maxAccessTime)} exceeded!`
+                reason: `${hostname} time limit exceeded!`
             });
             return {cancel: true};
         }
         return {cancel: false};
     }
-    updateTimeLimits(timeLimits) {
-        this.sitesWithLimitedAccess = timeLimits;
-        // update blacklist
-        for(let site of this.sitesBlackList) {
-            if(!this.sitesWithLimitedAccess[site]) {
-                this.sitesBlackList.delete(site);
-            }
-        }
+    updateLists(tableData) {
+        this.blackList.update(tableData);
+        this.whiteList.update(tableData);
+        this.limitedAccessList.update(tableData);
     }
 }
 
 class SettingsHandler {
     constructor(onSettingsUpdateCallback) {
         this.onSettingsUpdate = onSettingsUpdateCallback;
-        this.storageKeys = { settings : {
-            key : 'settings',
-            timeLimits : {
-                key: 'timeLimits'}}};
+        this.storageKeys = {
+            whiteList: 'White List',
+            blackList: 'Black List',
+            limitedAccessList: 'Limited Access List'};
         this.storage = new StorageWrapper();
         chrome.storage.onChanged.addListener(this.onStorageChange.bind(this));
         this.init();  
     }
     init() {
         let onSuccess = (result) => {
-            if(!Object.entries(result).length) {
-                this.onSettingsUpdate({});
-            } else {
-                this.onSettingsUpdate(result[this.storageKeys.settings.key][this.storageKeys.settings.timeLimits.key]);
+            if(Object.entries(result).length) {
+                this.onSettingsUpdate(result);
             }
         };
         let onFail = (error) => {
             console.warn('Failed to get settings: ' + error.message);
         };
-        this.storage.get(this.storageKeys.settings.key).then(onSuccess, onFail);
+        this.storage.get(this.storageKeys.whiteList).then(onSuccess, onFail);
+        this.storage.get(this.storageKeys.blackList).then(onSuccess, onFail);
+        this.storage.get(this.storageKeys.limitedAccessList).then(onSuccess, onFail);
     }
     onStorageChange(changes, areaName) {
         if(areaName !== 'local') {
             return;
         }
-        let settings = changes[this.storageKeys.settings.key];
-        if(!settings) {
-            return;
-        }
-        let newTimeLimits =  settings['newValue'][this.storageKeys.settings.timeLimits.key];
-        this.onSettingsUpdate(newTimeLimits);
+        this.onSettingsUpdate(changes);
     }
 }
 
@@ -462,7 +538,7 @@ class EventHandler {
         this.InitStatistics();
         this.communicationHandler = new CommunicationHandler(this.statisticsHandler);
         this.accessController = new AccessController(this.communicationHandler.showAccessBlockingAlert.bind(this.communicationHandler));
-        this.settings = new SettingsHandler(this.accessController.updateTimeLimits.bind(this.accessController));
+        this.settings = new SettingsHandler(this.accessController.updateLists.bind(this.accessController));
         this.setListeners();
     }
     InitStatistics() {

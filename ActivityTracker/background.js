@@ -525,6 +525,7 @@ class EventHandler {
             console.warn("Failed to get day from storage " + error.message);
         };
         this.storage.get(this.storageKeys.day).then(onSuccess, onFail);
+        this.statisticsHandler.updateActiveTabData();
     }
     setListeners() {
         chrome.tabs.onUpdated.addListener(this.onTabUpdate.bind(this));

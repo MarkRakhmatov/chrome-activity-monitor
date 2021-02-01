@@ -114,12 +114,15 @@ function highlight(element){
 }
 
 class SettingsGeneratingRow {
-    constructor(table, inputsNames, onRowAddadCallback) {
-        this.inputsNames = inputsNames;
+    constructor(table, inputnameToValidator) {
+        this.inputsNames = Object.keys(inputnameToValidator);
         this.table = table;
         this.inputs = {};
-        for(let inputName of this.inputsNames) {
-            this.inputs[inputName] = this.table.querySelector(`input[name="${inputName}"]`);
+        for(let [inputName, inputValidator] of Object.entries(inputnameToValidator)) {
+            this.inputs[inputName] = {
+                element : this.table.querySelector(`input[name="${inputName}"]`),
+                validator : inputValidator
+            };
         }
         this.table.querySelector('[class="days-checkboxes"]');
         this.daysCheckBoxes = new DaysCheckboxes(table);
@@ -127,29 +130,29 @@ class SettingsGeneratingRow {
         let addButton = table.querySelector('button[name="add-new-url"]');
         addButton.onclick = this.onAddNewSite.bind(this);
 
-        this.onRowAddadCallback = onRowAddadCallback;
+        this.onRowAddedCallback;
     }
     
     setInputsData(newRowData) {
         for(let inputName of this.inputsNames) {
-            this.inputs[inputName].value = newRowData[inputName];
+            this.inputs[inputName].element.value = newRowData[inputName];
         }
         this.daysCheckBoxes.setInputs(newRowData.days.split(',\n'));
     }
     cleanupInputs() {
         for(let inputName of this.inputsNames) {
-            this.inputs[inputName].value = '';
+            this.inputs[inputName].element.value = '';
         }
         this.daysCheckBoxes.cleanUp();
     }
     onAddNewSite() {
         let newRowData = {};
-        for(let [key, value] of Object.entries(this.inputs)) {
-            if (!value.checkValidity()) {
-                value.reportValidity();
+        for(let [_key, value] of Object.entries(this.inputs)) {
+            if (!value.validator(value.element)) {
+                value.element.reportValidity();
                 return;
             }
-            newRowData[value.name] = value.value;
+            newRowData[value.element.name] = value.element.value;
         }
 
         newRowData['days'] = this.daysCheckBoxes.getCheckedDays().join(',\n');
@@ -158,15 +161,16 @@ class SettingsGeneratingRow {
             return;
         }
 
-        this.onRowAddadCallback(newRowData, 2);
+        this.onRowAddedCallback(newRowData, 2);
         this.cleanupInputs();
         this.daysCheckBoxes.cleanUp();
     }
 }
 
 class SectionWithTimePeriodBody {
-    constructor(cellNames, table,  settingsGeneratingRow) {
+    constructor(cellNames, rowTemplateName, table,  settingsGeneratingRow) {
         this.cellNames = cellNames;
+        this.rowTemplateName = rowTemplateName;
         this.settingsTable = table;
         this.settingsGeneratingRow = settingsGeneratingRow;
         this.buttonToHandler = {
@@ -174,6 +178,12 @@ class SectionWithTimePeriodBody {
             duplicate : this.duplicateUrlHandler.bind(this),
             remove : this.removeUrlHandler.bind(this),
         };
+        this.onSectionChangedCallback;
+    }
+    initFromStorage(storageObject) {
+        for(let [_i, row] of Object.entries(storageObject)) {
+            this.addNewRow(row, -1);
+        }
     }
     setCellValue(row, name, value) {
         let cell = row.querySelector(`[name="${name}"]`);
@@ -182,38 +192,31 @@ class SectionWithTimePeriodBody {
     getCellData(row, name) {
         let cell = row.querySelector(`[name="${name}"]`);
         let cellValue = cell.innerHTML;
-        if(!cellValue || !cellValue.length) {
-            throw 'Empty cell!';
-        }
         return cellValue;
     }
     getRowData(row) {
         let rowData = {};
         
-        let siteName = 'site';
-        rowData[siteName] = this.getCellData(row, siteName);
-
-        let timeStartName = 'timeStart';
-        rowData[timeStartName] = this.getCellData(row, timeStartName);
-
-        let timeEndName = 'timeEnd';
-        rowData[timeEndName] = this.getCellData(row, timeEndName);
- 
-        let daysName = 'days';
-        rowData[daysName] = this.getCellData(row, daysName);
+        for(let cellName of this.cellNames) {
+            rowData[cellName] = this.getCellData(row, cellName);
+        }
         return rowData;
     }
-    removeRow(index) {
-        if(!index)
-        {
-            console.log('invalidRow');
-            return;
+    getAllData() {
+        let tableData = [];
+        let rows = this.settingsTable.rows;
+        let rowsSize = rows.length;
+        for(let i = 2; i < rowsSize; ++i) {
+            tableData.push(this.getRowData(rows[i]));
         }
-        this.settingsTable.deleteRow(index);
+        return tableData;
     }
-
+    removeRow(index) {
+        this.settingsTable.deleteRow(index);
+        this.onSectionChangedCallback(this.getAllData());
+    }
     changeUrlHandler(event) {
-        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        let originalRow = event.target.parentNode.parentNode.parentNode;
         let newRowData = this.getRowData(originalRow);
         this.settingsGeneratingRow.setInputsData(newRowData);
         this.settingsTable.scrollIntoView();
@@ -221,16 +224,12 @@ class SectionWithTimePeriodBody {
         this.removeRow(originalRow.rowIndex);
     }
     duplicateUrlHandler(event) {
-        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
-        try {
-            let newRowData = this.getRowData(originalRow);
-            this.addNewRow(newRowData, originalRow.rowIndex+1);
-        } catch (error) {
-            console.log('Failed to duplicate row!');
-        }
+        let originalRow = event.target.parentNode.parentNode.parentNode;
+        let newRowData = this.getRowData(originalRow);
+        this.addNewRow(newRowData, originalRow.rowIndex+1);
     }
     removeUrlHandler(event) {
-        let originalRow = event.target.parentNode.parentNode.parentNode.parentNode;
+        let originalRow = event.target.parentNode.parentNode.parentNode;
         this.removeRow(originalRow.rowIndex);
     }
     setEventHandlers(actionsContainer) {
@@ -240,7 +239,7 @@ class SectionWithTimePeriodBody {
         }
     }
     addNewRow(newRowData, index) {
-        let newRow = createNodeFromTemplate(document.getElementById('list-with-time-period-row-template'));
+        let newRow = createNodeFromTemplate(document.getElementById(this.rowTemplateName));
         
         for(let cellName of this.cellNames) {
             this.setCellValue(newRow, cellName, newRowData[cellName]);
@@ -251,63 +250,108 @@ class SectionWithTimePeriodBody {
         let actionsContainer = row.querySelector('[name="settings-table-actions"]')
         this.setEventHandlers(actionsContainer);
         highlight(row);
+        this.onSectionChangedCallback(this.getAllData());
     }
 }
 
+function defaultInputValidator(element) {
+    return element.checkValidity();
+}
+function timePeriodValidator(timeEndElement) {
+    let row = timeEndElement.parentNode.parentNode;
+    let timeStart = row.querySelector('input[name="timeStart"]');
+    timeEndElement.setCustomValidity("\"Time End\" should be greater then \"Time Start\"");
+    return timeEndElement.value.localeCompare(timeStart.value) > 0;
+};
 
 class SectionWithTimePeriod {
-    constructor(sectionName) {
+    constructor(sectionName, tableTemplateName, rowTemplateName, cellNames, inputnameToValidator) {
         this.sectionName = sectionName;
-        let listWithTimePeriodTemplate = document.getElementById('list-with-time-period-template');
-        let listNode = createNodeFromTemplate(listWithTimePeriodTemplate);
-        listNode.querySelector('table[class="table-style"]').setAttribute('name', this.sectionName);
-        let caption = listNode.querySelector('caption[name="list-type"]');
+        let tableTemplate = document.getElementById(tableTemplateName);
+        let tableNode = createNodeFromTemplate(tableTemplate);
+        tableNode.querySelector('table[class="table-style"]').setAttribute('name', this.sectionName);
+        let caption = tableNode.querySelector('caption[name="list-type"]');
         caption.innerHTML = sectionName;
         
         this.rootNode = document.getElementById('settings-container');
-        this.listWithTimePeriodNode = this.rootNode.appendChild(listNode);
+        this.listWithTimePeriodNode = this.rootNode.appendChild(tableNode);
         this.settingsTable = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
         
-        let inputNames = ['site', 'timeStart', 'timeEnd'];
-        this.settingsGeneratingRow = new SettingsGeneratingRow(this.settingsTable, inputNames, this.addNewRow.bind(this))
+        this.settingsGeneratingRow = new SettingsGeneratingRow(this.settingsTable, inputnameToValidator);
         
-        let cellNames = ['site', 'timeStart', 'timeEnd', 'days'];
-        this.settingsTableBody = new SectionWithTimePeriodBody(cellNames, this.settingsTable, this.settingsGeneratingRow);
+        this.settingsTableBody = new SectionWithTimePeriodBody(cellNames, rowTemplateName, this.settingsTable, this.settingsGeneratingRow);
+        this.settingsGeneratingRow.onRowAddedCallback = this.settingsTableBody.addNewRow.bind(this.settingsTableBody);
     }
-    getAllData() {
-        let tableDataSet = Set();
-        for(let row of this.settingsTable.rows) {
-            tableDataSet.push(this.getRowData(row));
+    initFromStorage(storageObject) {
+        if(!Object.entries(storageObject).length) {
+            return;
         }
-        let tableData = {};
-        for(let row in tableDataSet) {
-            tableData[row.rowIndex] = row;
-        }
-        return {[this.sectionName]: tableData};
+        this.settingsTableBody.initFromStorage(storageObject[this.sectionName]);
     }
-    addNewRow(rowData, index) {
-        this.settingsTableBody.addNewRow(rowData, index);
+    setSectionChangeListener(listener) {
+        this.settingsTableBody.onSectionChangedCallback = listener;
     }
 }
 
 class SectionUpdateHandler {
     constructor(settingSection) {
-        this.settingsSection = settingSection;
         this.storage = new StorageWrapper();
+        this.settingsSection = settingSection;
+        this.settingsSection.setSectionChangeListener(this.saveTableDataToStorage.bind(this));
+        this.initTableDataFromStorage();
     }
-    updateStorage() {
-
+    saveTableDataToStorage(tableData) {
+        this.storage.set(this.settingsSection.sectionName, tableData)
+    }
+    initTableDataFromStorage() {
+        this.storage.get(this.settingsSection.sectionName).then(
+            this.settingsSection.initFromStorage.bind(this.settingsSection));
     }
 }
-
+function createTimePeriodSection(sectionName)
+{
+    let tableTemplateName = 'list-with-time-period-template';
+    let rowTemplateName = 'list-with-time-period-row-template';
+    let cellNames = ['site', 'timeStart', 'timeEnd', 'days'];
+    let inputnameToValidator = {
+        'site' : defaultInputValidator,
+        'timeStart' : defaultInputValidator,
+        'timeEnd' : timePeriodValidator};
+    return new SectionWithTimePeriod(
+        sectionName, 
+        tableTemplateName, 
+        rowTemplateName, 
+        cellNames, 
+        inputnameToValidator);
+}
+function createTimeIntervalSection(sectionName)
+{
+    let tableTemplateName = 'list-with-time-interval-template';
+    let rowTemplateName = 'list-with-time-interval-row-template';
+    let cellNames = ['site', 'timeInterval', 'days'];
+    let inputnameToValidator = {
+        'site' : defaultInputValidator,
+        'timeInterval' : defaultInputValidator};
+    return new SectionWithTimePeriod(
+        sectionName, 
+        tableTemplateName, 
+        rowTemplateName, 
+        cellNames, 
+        inputnameToValidator);
+}
 class Settings {
     constructor() {
         let blackList = 'Black List';
         this.blackListSection = new SectionUpdateHandler(
-            new SectionWithTimePeriod(blackList));
+            createTimePeriodSection(blackList));
+        
         let whiteList = 'White List';
         this.whiteListSection = new SectionUpdateHandler(
-            new SectionWithTimePeriod(whiteList));
+            createTimePeriodSection(whiteList));
+        
+        let limitedAccessList = 'Limited Access List';
+        this.limitedAccesSsection = new SectionUpdateHandler(
+            createTimeIntervalSection(limitedAccessList));
     }
 }
     window.settingsView = new Settings();

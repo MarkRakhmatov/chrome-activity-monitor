@@ -98,19 +98,23 @@ class DaysCheckboxes {
     }
 }
 
-function highlight(element){
+function highlight(element) {
+    let settingsContainer = document.getElementById('settings-container');
+    if(settingsContainer.style.display === 'none') {
+        return;
+    }
     let defaultBG = element.style.backgroundColor;
     let defaultTransition = element.style.transition;
 
-    element.style.transition = "background 1s";
-    element.style.backgroundColor = "#FDFF47";
+    element.style.transition = "background 0.5s";
+    element.style.backgroundColor = "#FFFF87";
     setTimeout(function()
     {
         element.style.backgroundColor = defaultBG;
         setTimeout(function() {
             element.style.transition = defaultTransition;
-        }, 1000);
-    }, 1000);
+        }, 500);
+    }, 500);
 }
 
 class SettingsGeneratingRow {
@@ -120,7 +124,7 @@ class SettingsGeneratingRow {
         this.inputs = {};
         for(let [inputName, inputValidator] of Object.entries(inputnameToValidator)) {
             this.inputs[inputName] = {
-                element : this.table.querySelector(`input[name="${inputName}"]`),
+                element : this.table.querySelector(`[name="${inputName}"]`),
                 validator : inputValidator
             };
         }
@@ -152,7 +156,7 @@ class SettingsGeneratingRow {
                 value.element.reportValidity();
                 return;
             }
-            newRowData[value.element.name] = value.element.value;
+            newRowData[value.element.name] = value.element.value.trim();
         }
 
         newRowData['days'] = this.daysCheckBoxes.getCheckedDays().join(',\n');
@@ -181,9 +185,12 @@ class SectionWithTimePeriodBody {
         this.onSectionChangedCallback;
     }
     initFromStorage(storageObject) {
+        let settingsContainer = document.getElementById('settings-container');
+        settingsContainer.style.display = 'none';
         for(let [_i, row] of Object.entries(storageObject)) {
             this.addNewRow(row, -1);
         }
+        settingsContainer.style.display = 'flex';
     }
     setCellValue(row, name, value) {
         let cell = row.querySelector(`[name="${name}"]`);
@@ -263,6 +270,12 @@ function timePeriodValidator(timeEndElement) {
     timeEndElement.setCustomValidity("\"Time End\" should be greater then \"Time Start\"");
     return timeEndElement.value.localeCompare(timeStart.value) > 0;
 };
+function sitesListValidator(sitesElement) {
+    let sitesListstr = sitesElement.value;
+    let regSites = new RegExp("^(((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))\s*\n*\r*)+$");
+    sitesElement.setCustomValidity("Invalid syntax!");
+    return regSites.test(sitesListstr);
+};
 
 class SectionWithTimePeriod {
     constructor(sectionName, tableTemplateName, rowTemplateName, cellNames, inputnameToValidator) {
@@ -314,7 +327,7 @@ function createTimePeriodSection(sectionName)
     let rowTemplateName = 'list-with-time-period-row-template';
     let cellNames = ['site', 'timeStart', 'timeEnd', 'days'];
     let inputnameToValidator = {
-        'site' : defaultInputValidator,
+        'site' : sitesListValidator,
         'timeStart' : defaultInputValidator,
         'timeEnd' : timePeriodValidator};
     return new SectionWithTimePeriod(
@@ -330,7 +343,7 @@ function createTimeIntervalSection(sectionName)
     let rowTemplateName = 'list-with-time-interval-row-template';
     let cellNames = ['site', 'timeInterval', 'days'];
     let inputnameToValidator = {
-        'site' : defaultInputValidator,
+        'site' : sitesListValidator,
         'timeInterval' : defaultInputValidator};
     return new SectionWithTimePeriod(
         sectionName, 
@@ -354,5 +367,6 @@ class Settings {
             createTimeIntervalSection(limitedAccessList));
     }
 }
+
     window.settingsView = new Settings();
 })();

@@ -377,7 +377,7 @@ class SettingsPeriodTable {
             return {inList: false, isActiveRowsEmpty: true};
         }
         for(let row of rows) {
-            if(row.site === site) {
+            if(row.site.split(/\s|\n|\r/).includes(site)) {
                 return {inList: true, isActiveRowsEmpty: false};
             }
         }
@@ -419,29 +419,19 @@ class SettingsIntervalTable {
         this.rows;
     }
     includes(site) {
-        let rows = this.getSiteRows(site);
-        if(!rows.length) {
-            return false;
-        }
         let currentDayOfWeek = getWeekDay();
-        for(let row of rows) {
-            if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
-                let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
-                let activeTimeStr = new Duration(activeTime).toString();
-                let rowTime = row.timeInterval + ":00";
-                return  activeTimeStr > rowTime;
+        
+        for(let [i, row] of Object.entries(this.rows)) {
+            if(row.site.split(/\s|\n|\r/).includes(site)) {
+                if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
+                    let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
+                    let activeTimeStr = new Duration(activeTime).toString();
+                    let rowTime = row.timeInterval + ":00";
+                    return  activeTimeStr > rowTime;
+                }
             }
         }
         return false;
-    }
-    getSiteRows(site) {
-        let rows = [];
-        for(let [i, row] of Object.entries(this.rows)) {
-            if(row.site === site) {
-                rows.push(row);
-            }
-        }
-        return rows;
     }
     update(tableData) {
         let tableRows = tableData[this.name];

@@ -75,7 +75,7 @@
     </head>
     <template id="list-with-time-period-row-template" class="settings-row">
         <tr>
-            <td name="site"></td>
+            <td name="site" style="white-space: pre-wrap;"></td>
             <td name="timeStart"></td>
             <td name="timeEnd"></td>
             <td name="days"></td>
@@ -102,14 +102,14 @@
             <tbody>
                 <tr name="add-new-site-row" class="settings-row">
                     <td>
-                        <input
+                        <textarea
                             type="text"
-                            style="width: 95%;"
-                            placeholder="Add new URL"
+                            style="width: 200px; height: 150px"
+                            placeholder="Add new URLs"
                             name="site"
-                            pattern="(?:\w+\.)*\w+$"
+                            pattern="((?:\w+\.)+\w+(;*)(\s*))+"
                             required
-                        >
+                        ></textarea>
                     </td>
                     <td>
                         <input
@@ -190,14 +190,13 @@
             <tbody>
                 <tr name="add-new-site-row" class="settings-row">
                     <td>
-                        <input
+                        <textarea
                             type="text"
-                            style="width: 95%;"
-                            placeholder="Add new URL"
+                            style="width: 200px; height: 150px"
+                            placeholder="Add new URLs"
                             name="site"
-                            pattern="(?:\w+\.)*\w+$"
                             required
-                        >
+                        ></textarea>
                     </td>
                     <td>
                         <input

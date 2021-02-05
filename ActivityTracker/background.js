@@ -195,7 +195,8 @@ class HostTimeData {
 class StatisticsHandler {
     constructor() {
         this.hostnameToTimeData = {};
-        this.lastHostname = '';
+        this.lastHostname;
+        this.lastActiveHostname;
         this.currentTab = 0;
         this.isDocumentFocused = true;
         this.sitesIgnoreList = new Set([chrome.runtime.id, 'newtab', 'extensions']);
@@ -210,6 +211,10 @@ class StatisticsHandler {
         }
     }
     updateHostTimeData(hostname, tabId) {
+        if (!hostname || hostname.length === 0) {
+            return;
+        }
+        this.lastActiveHostname = hostname;
         if(!this.isDocumentFocused) {
             console.log('Document is not focused, skip update');
             return;
@@ -279,6 +284,9 @@ class StatisticsHandler {
     }
     getLastHostname() {
         return this.lastHostname;
+    }
+    getLastActiveHostname() {
+        return this.lastActiveHostname;
     }
     getActiveTimeForHostname(hostname) {
         let hostData = this.hostnameToTimeData[hostname] ;
@@ -455,7 +463,7 @@ class AccessController {
     }
     onBeforeRequest(details) {
         let hostname = getHostname(details.initiator);
-        if(hostname !== window.eventHandler.statisticsHandler.getLastHostname()) {
+        if(hostname !== window.eventHandler.statisticsHandler.getLastActiveHostname()) {
             return;
         }
         let result = this.whiteList.includes(hostname);

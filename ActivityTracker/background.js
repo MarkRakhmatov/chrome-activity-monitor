@@ -432,7 +432,7 @@ class SettingsIntervalTable {
         for(let [i, row] of Object.entries(this.rows)) {
             if(row.site.split(/\s|\n|\r/).includes(site)) {
                 if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
-                    let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
+                    let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(site);
                     let activeTimeStr = new Duration(activeTime).toString();
                     let rowTime = row.timeInterval + ":00";
                     return  activeTimeStr > rowTime;

@@ -170,6 +170,11 @@ document.onmouseenter = function() {
 document.onmouseleave = function() {
     notifyFocusChange(false);
 }
+document.onfullscreenchange = function() {
+    if(document.fullscreenElement !== null) {
+        notifyFocusChange(true);
+    }
+}
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.name == "showModal") {

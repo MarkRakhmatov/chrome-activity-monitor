@@ -374,6 +374,18 @@ class CommunicationHandler {
     }
 }
 
+function updateTableRows(tableName, tableData)
+{
+    let tableRows = tableData[tableName];
+    if(!tableRows) {
+        return;
+    }
+    let newValue = tableRows['newValue'];
+    if(newValue) {
+        return newValue;
+    }
+    return tableRows;
+}
 class SettingsPeriodTable {
     constructor(name) {
         this.name = name;
@@ -408,16 +420,10 @@ class SettingsPeriodTable {
         return rows;
     }
     update(tableData) {
-        let tableRows = tableData[this.name];
-        if(!tableRows) {
-            return;
+        let newRows = updateTableRows(this.name,tableData);
+        if(newRows) {
+            this.rows = newRows;
         }
-        let newValue = tableRows['newValue'];
-        if(newValue) {
-            this.rows = newValue;
-            return;
-        }
-        this.rows = tableRows;
     }
 }
 
@@ -426,14 +432,19 @@ class SettingsIntervalTable {
         this.name = name;
         this.rows;
     }
-    includes(site) {
+    includes(siteToCheck) {
         let currentDayOfWeek = getWeekDay();
         
         for(let [i, row] of Object.entries(this.rows)) {
-            if(row.site.split(/\s|\n|\r/).includes(site)) {
-                if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
-                    let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(site);
-                    let activeTimeStr = new Duration(activeTime).toString();
+            if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
+                let sites = row.site.split(/\s|\n|\r/);
+                if(sites.includes(siteToCheck)) {
+                    let timeOnLimitedAccesSites = 0;
+                    for(let site of sites) {
+                        let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(site)
+                        timeOnLimitedAccesSites += activeTime;
+                    };
+                    let activeTimeStr = new Duration(timeOnLimitedAccesSites).toString();
                     let rowTime = row.timeInterval + ":00";
                     return  activeTimeStr > rowTime;
                 }
@@ -442,11 +453,10 @@ class SettingsIntervalTable {
         return false;
     }
     update(tableData) {
-        let tableRows = tableData[this.name];
-        if(!tableRows) {
-            return;
+        let newRows = updateTableRows(this.name,tableData);
+        if(newRows) {
+            this.rows = newRows;
         }
-        this.rows = tableRows;
     }
 }
 

@@ -392,6 +392,10 @@ class SettingsPeriodTable {
         this.rows;
     }
     includes(site) {
+        if(!this.rows) {
+            return {inList: false, isActiveRowsEmpty: true};
+        }
+
         let rows = this.getSiteActiveRows(site);
         if(!rows.length) {
             return {inList: false, isActiveRowsEmpty: true};
@@ -433,6 +437,9 @@ class SettingsIntervalTable {
         this.rows;
     }
     includes(siteToCheck) {
+        if(!this.rows) {
+            return false;
+        }
         let currentDayOfWeek = getWeekDay();
         
         for(let [i, row] of Object.entries(this.rows)) {

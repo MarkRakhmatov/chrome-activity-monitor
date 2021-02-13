@@ -157,6 +157,11 @@ function notifyFocusChange(isInFocus) {
     chrome.runtime.sendMessage(null, {name: message, url: document.URL, focus: isInFocus});
 }
 
+function notifyFullscreenChange(isFullscreen) {
+    let message = "fullscreenState";
+    chrome.runtime.sendMessage(null, {name: message, url: document.URL, fullscreen: isFullscreen});
+}
+
 window.onfocus = function() {
     notifyFocusChange(true);
 }
@@ -171,9 +176,7 @@ document.onmouseleave = function() {
     notifyFocusChange(false);
 }
 document.onfullscreenchange = function() {
-    if(document.fullscreenElement !== null) {
-        notifyFocusChange(true);
-    }
+    notifyFullscreenChange(document.fullscreenElement !== null);
 }
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {

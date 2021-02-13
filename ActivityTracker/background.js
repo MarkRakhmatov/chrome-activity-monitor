@@ -199,6 +199,7 @@ class StatisticsHandler {
         this.lastActiveHostname;
         this.currentTab = 0;
         this.isDocumentFocused = true;
+        this.isFullScreen = false;
         this.sitesIgnoreList = new Set([chrome.runtime.id, 'newtab', 'extensions']);
     }
     initFromSerialMap(serialMap) {
@@ -215,7 +216,7 @@ class StatisticsHandler {
             return;
         }
         this.lastActiveHostname = hostname;
-        if(!this.isDocumentFocused) {
+        if(!this.isDocumentFocused && !this.isFullScreen) {
             console.log('Document is not focused, skip update');
             return;
         }
@@ -247,6 +248,9 @@ class StatisticsHandler {
         getActiveTab().then(this.updateStatisticsFromTab.bind(this), this.deactivateCurrentHost.bind(this));
     }
     deactivateTab(tabId) {
+        if(this.isFullScreen) {
+            return;
+        }
         console.log('Deactivate statistics timer for tabId: ' + tabId);
         for (let host in this.hostnameToTimeData) {
             const value = this.hostnameToTimeData[host];
@@ -259,6 +263,9 @@ class StatisticsHandler {
         }
     }
     deactivateHost(hostname) {
+        if(this.isFullScreen) {
+            return;
+        }
         console.log('Deactivate statistics timer for hostname: ' + hostname);
         let hostTimeData = this.hostnameToTimeData[hostname];
         if (hostTimeData) {
@@ -280,6 +287,16 @@ class StatisticsHandler {
         else {
             this.isDocumentFocused = false;
             this.deactivateCurrentHost();
+        }
+    }
+    handleFullscreenChange(fullscreenState, hostname, tabId) {
+        if(fullscreenState) {
+            this.currentTab = tabId;
+            this.isFullScreen = true;
+            this.updateHostTimeData(hostname, tabId);
+        }
+        else {
+            this.isFullScreen = false;
         }
     }
     getLastHostname() {
@@ -326,6 +343,7 @@ class CommunicationHandler {
         this.statisticsHandler = statisticsHandlerRef;
         this.messageHandlers = {
             "focusState" : this.onFocusStateMsg.bind(this),
+            "fullscreenState" : this.onFullscreenStateMsg.bind(this),
             "getStatistics": this.onGetStatisticsMsg.bind(this)};
         chrome.runtime.onMessage.addListener(this.onMessage.bind(this));
     }
@@ -333,6 +351,11 @@ class CommunicationHandler {
         let url = getHostnameOrUrl(message.url);
         console.log((message.focus === true? 'focus ' : 'blur ') + url);
         this.statisticsHandler.handleFocusChange(message.focus, url, sender.tab.id);
+    }
+    onFullscreenStateMsg(message, sender, _response) {
+        let url = getHostnameOrUrl(message.url);
+        console.log('Fullscreen ' + (message.fullscreen === true? 'on ' : 'off ') + url);
+        this.statisticsHandler.handleFullscreenChange(message.fullscreen, url, sender.tab.id);
     }
     onGetStatisticsMsg(message, sender, response) {
         response(this.statisticsHandler.getFormattedMap());
@@ -624,7 +647,7 @@ class EventHandler {
         chrome.tabs.onRemoved.addListener(this.onTabRemoved.bind(this));
         setInterval(() => {
             this.checkDayChange();
-        }, 20000);
+        }, 5000);
     }
 }
 

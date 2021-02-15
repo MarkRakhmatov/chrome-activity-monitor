@@ -504,15 +504,20 @@ class AccessController {
     onBeforeRequest(details) {
         let hostname = getHostname(details.initiator);
         if(hostname !== window.eventHandler.statisticsHandler.getLastActiveHostname()) {
-            return;
+            return {cancel: false};
         }
         let result = this.whiteList.includes(hostname);
-        if(!result.isActiveRowsEmpty && !result.inList) {
-            this.onAccessBlocked({
-                hostname: hostname,
-                reason: `${hostname} does not belong to the list of allowed sites!`
-            });
-            return {cancel: true};
+        if(!result.isActiveRowsEmpty) {
+            if(result.inList) {
+                return {cancel: false};
+            }
+            else {
+                this.onAccessBlocked({
+                    hostname: hostname,
+                    reason: `${hostname} does not belong to the list of allowed sites!`
+                });
+                return {cancel: true};
+            }
         }
         if(this.blackList.includes(hostname).inList) {
             this.onAccessBlocked({

@@ -184,6 +184,12 @@ chrome.runtime.onMessage.addListener(
             console.log("Show statistics!");
             showModal(request.stat);
         }
+        else if(request.name == "showAccessBlockingMessage") {
+            console.log("show access blocking message!");
+            document.body.style="font-size: 20px; font-family: Arial, Helvetica, sans-serif; text-align: center; padding-top: 20%;";
+            document.body.innerHTML = request.message;
+            document.head.innerHTML = "";
+        }
         sendResponse();
     }
 );

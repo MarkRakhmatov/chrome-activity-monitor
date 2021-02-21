@@ -15,13 +15,6 @@ function getHostnameOrUrl(urlString) {
     }
     return hostname;
 }
-function getWeekDay() {
-    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-    const d = new Date();
-    return weekdays[d.getDay()];
-}
-
 function zeroPrefixedNum(num, width) {
     const numStr = num.toString();
     const numSize = numStr.length;
@@ -31,6 +24,17 @@ function zeroPrefixedNum(num, width) {
         prefix += 0;
     }
     return prefix + numStr;
+}
+function getWeekDay() {
+    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    const d = new Date();
+    return weekdays[d.getDay()];
+}
+function getCurrentTimeString() {
+    let currentdate = new Date();
+    return zeroPrefixedNum(currentdate.getHours(), 2) + ":"  
+        + zeroPrefixedNum(currentdate.getMinutes(), 2);
 }
 
 function getActiveTab() {
@@ -195,8 +199,8 @@ class HostTimeData {
 class StatisticsHandler {
     constructor() {
         this.hostnameToTimeData = {};
-        this.lastHostname;
-        this.lastActiveHostname;
+        this.lastHostname = '';
+        this.lastActiveHostname = '';
         this.currentTab = 0;
         this.isDocumentFocused = true;
         this.isFullScreen = false;
@@ -376,7 +380,7 @@ class CommunicationHandler {
             }
             chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : formattedStat}, {}, (_response)=>{
                 if (chrome.runtime.lastError) {
-                    console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
+                    console.log("Failed to show statistics: " + chrome.runtime.lastError.message);
                 }
             });
         };
@@ -387,13 +391,67 @@ class CommunicationHandler {
             showStatisticTableOnActiveTab,
             logIfNoActiveTab);
     }
-    
-    showAccessBlockingAlert(alertInfo) {
-        if(this.lastAlertTime && Date.now() - this.lastAlertTime < 5000) {
+    showAccessBlockingMessage(message) {
+        let sendMessage = (activeTab)=> {
+            if(!message.includes(getHostnameOrUrl(activeTab.url))) {
+                return;
+            }
+            chrome.tabs.sendMessage(activeTab.id, {name : "showAccessBlockingMessage", message: message}, {}, (_response)=>{
+                if (chrome.runtime.lastError) {
+                    console.log("Failed to showAccessBlockingMessage: " + chrome.runtime.lastError.message);
+                }
+            });
+        };
+        let logIfNoActiveTab = ()=> {
+            console.log('No active tab!');
+        };
+        getActiveTab().then( 
+            sendMessage,
+            logIfNoActiveTab);
+    }
+    showAccessBlockingAlert(message) {
+        this.showAccessBlockingMessage(`Access to ${message.hostname} blocked! Reason: ${message.reason}`);
+    }
+}
+
+class AlertManager {
+    constructor() {
+        this.alertInfos = [];
+        this.activeAlerts = [];
+        this.dayOfWeek = getWeekDay();
+        setInterval(this.checkAlert.bind(this), 1000);
+    }
+    showAlert(message) {
+        alert(message);
+    }
+    checkAlert() {
+        let currentDayOfWeek = getWeekDay();
+        if(this.dayOfWeek != currentDayOfWeek) {
+            this.dayOfWeek = currentDayOfWeek;
+            updateCurrentDayAlerts();
+        }
+        let len = this.activeAlerts.length;
+        if(!len) {
             return;
         }
-        alert(`Access to ${alertInfo.hostname} blocked! Reason: ${alertInfo.reason}`);
-        this.lastAlertTime = Date.now();
+        let nextAlertIndex = len - 1; 
+        let currentTimeofDay = getCurrentTimeString();
+        if(this.activeAlerts[nextAlertIndex].time <= currentTimeofDay) {
+            this.showAlert(this.activeAlerts[nextAlertIndex].message);
+            this.activeAlerts.pop();
+        }
+    }
+    updateCurrentDayAlerts() {
+        let currentTimeofDay = getCurrentTimeString();
+        let activeAlerts = this.alertInfos.filter((value) => 
+            (value.days.includes('Every day') || value.days.includes(this.dayOfWeek)) && value.time > currentTimeofDay)
+                activeAlerts = activeAlerts.sort((a, b) =>  a.time > b.time  ? -1 : a.time === b.time? 0 : 1);
+        this.activeAlerts = activeAlerts;
+    }
+    updateAlertInfos(alertsInfos) {
+        this.alertInfos = alertsInfos;
+        this.dayOfWeek = getWeekDay();
+        this.updateCurrentDayAlerts();
     }
 }
 
@@ -413,13 +471,14 @@ class SettingsPeriodTable {
     constructor(name) {
         this.name = name;
         this.rows;
+        this.alertManager = new AlertManager(); 
     }
     includes(site) {
         if(!this.rows) {
             return {inList: false, isActiveRowsEmpty: true};
         }
 
-        let rows = this.getSiteActiveRows(site);
+        let rows = this.getActiveRows(site);
         if(!rows.length) {
             return {inList: false, isActiveRowsEmpty: true};
         }
@@ -430,15 +489,13 @@ class SettingsPeriodTable {
         }
         return {inList: false, isActiveRowsEmpty: false};
     }
-    getSiteActiveRows(site) {
+    getActiveRows() {
         let rows = [];
-        let currentdate = new Date();
-        let currentTimeofDay = zeroPrefixedNum(currentdate.getHours(), 2) + ":"  
-            + zeroPrefixedNum(currentdate.getMinutes(), 2);
+        let currentTimeofDay = getCurrentTimeString();
         let currentDayOfWeek = getWeekDay();
         for(let [i, row] of Object.entries(this.rows)) {
             if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
-                let inList = currentTimeofDay > row.timeStart && currentTimeofDay < row.timeEnd;
+                let inList = currentTimeofDay >= row.timeStart && currentTimeofDay < row.timeEnd;
                 if(inList) {
                     rows.push(row);
                 }
@@ -450,6 +507,14 @@ class SettingsPeriodTable {
         let newRows = updateTableRows(this.name,tableData);
         if(newRows) {
             this.rows = newRows;
+            let alertInfosConverter = (rows) => {
+                let alertInfos = [];
+                for(let [i, row] of Object.entries(rows)) {
+                    alertInfos.push({time: row.timeStart, days: row.days, message: this.name + ': ' + row.site});
+                }
+                return alertInfos;
+            };
+            this.alertManager.updateAlertInfos(alertInfosConverter(newRows));
         }
     }
 }
@@ -501,39 +566,44 @@ class AccessController {
             {urls: ["*://*/*"]},
             ['blocking']);
     }
-    onBeforeRequest(details) {
-        let hostname = getHostname(details.initiator);
+    isAccessBlocked(hostname) {
         if(hostname !== window.eventHandler.statisticsHandler.getLastActiveHostname()) {
-            return {cancel: false};
+            return false;
         }
         let result = this.whiteList.includes(hostname);
         if(!result.isActiveRowsEmpty) {
             if(result.inList) {
-                return {cancel: false};
+                return false;
             }
             else {
                 this.onAccessBlocked({
                     hostname: hostname,
                     reason: `${hostname} does not belong to the list of allowed sites!`
                 });
-                return {cancel: true};
+                return true;
             }
         }
         if(this.blackList.includes(hostname).inList) {
             this.onAccessBlocked({
                 hostname: hostname,
                 reason: `${hostname} belong to the list of blocked sites!`
-            });
-            return {cancel: true};
+            })
+            return true;
         }
         if(this.limitedAccessList.includes(hostname)) {
             this.onAccessBlocked({
                 hostname: hostname,
                 reason: `${hostname} time limit exceeded!`
             });
-            return {cancel: true};
+            return true;
         }
-        return {cancel: false};
+        return false;
+    }
+    onBeforeRequest(details) {
+        let initiatorHostname = getHostname(details.initiator);
+        let urlHostname = getHostname(details.url);
+        let isBlocked = this.isAccessBlocked(initiatorHostname) || this.isAccessBlocked(urlHostname);
+        return {cancel: isBlocked};
     }
     updateLists(tableData) {
         this.blackList.update(tableData);
@@ -550,6 +620,9 @@ class SettingsHandler {
             blackList: 'Black List',
             limitedAccessList: 'Limited Access List'};
         this.storage = new StorageWrapper();
+        this.onFail = (error) => {
+            console.warn('Failed to get settings: ' + error.message);
+        };
         chrome.storage.onChanged.addListener(this.onStorageChange.bind(this));
         this.init();  
     }
@@ -559,12 +632,9 @@ class SettingsHandler {
                 this.onSettingsUpdate(result);
             }
         };
-        let onFail = (error) => {
-            console.warn('Failed to get settings: ' + error.message);
-        };
-        this.storage.get(this.storageKeys.whiteList).then(onSuccess, onFail);
-        this.storage.get(this.storageKeys.blackList).then(onSuccess, onFail);
-        this.storage.get(this.storageKeys.limitedAccessList).then(onSuccess, onFail);
+        this.storage.get(this.storageKeys.whiteList).then(onSuccess, this.onFail);
+        this.storage.get(this.storageKeys.blackList).then(onSuccess, this.onFail);
+        this.storage.get(this.storageKeys.limitedAccessList).then(onSuccess, this.onFail);
     }
     onStorageChange(changes, areaName) {
         if(areaName !== 'local') {
@@ -581,7 +651,10 @@ class EventHandler {
         this.InitStatistics();
         this.communicationHandler = new CommunicationHandler(this.statisticsHandler);
         this.accessController = new AccessController(this.communicationHandler.showAccessBlockingAlert.bind(this.communicationHandler));
-        this.settings = new SettingsHandler(this.accessController.updateLists.bind(this.accessController));
+        let onSettingsUpdate = (changes) => {
+            this.accessController.updateLists(changes);
+        };
+        this.settings = new SettingsHandler(onSettingsUpdate);
         this.setListeners();
     }
     InitStatistics() {

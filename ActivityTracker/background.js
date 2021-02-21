@@ -428,7 +428,7 @@ class AlertManager {
         let currentDayOfWeek = getWeekDay();
         if(this.dayOfWeek != currentDayOfWeek) {
             this.dayOfWeek = currentDayOfWeek;
-            updateCurrentDayAlerts();
+            this.updateCurrentDayAlerts();
         }
         let len = this.activeAlerts.length;
         if(!len) {

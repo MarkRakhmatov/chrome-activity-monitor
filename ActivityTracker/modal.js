@@ -166,6 +166,10 @@ window.onfocus = function() {
     notifyFocusChange(true);
 }
 window.onblur = function() {
+    if(document.activeElement.tagName.toLowerCase() === 'iframe') {
+        // when iframe is focused, document loses the focus
+        return;
+    }
     notifyFocusChange(false);
 }
 

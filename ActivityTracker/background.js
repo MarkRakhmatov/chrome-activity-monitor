@@ -15,13 +15,6 @@ function getHostnameOrUrl(urlString) {
     }
     return hostname;
 }
-function getWeekDay() {
-    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-    const d = new Date();
-    return weekdays[d.getDay()];
-}
-
 function zeroPrefixedNum(num, width) {
     const numStr = num.toString();
     const numSize = numStr.length;
@@ -31,6 +24,17 @@ function zeroPrefixedNum(num, width) {
         prefix += 0;
     }
     return prefix + numStr;
+}
+function getWeekDay() {
+    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    const d = new Date();
+    return weekdays[d.getDay()];
+}
+function getCurrentTimeString() {
+    let currentdate = new Date();
+    return zeroPrefixedNum(currentdate.getHours(), 2) + ":"  
+        + zeroPrefixedNum(currentdate.getMinutes(), 2);
 }
 
 function getActiveTab() {
@@ -196,8 +200,10 @@ class StatisticsHandler {
     constructor() {
         this.hostnameToTimeData = {};
         this.lastHostname = '';
+        this.lastActiveHostname = '';
         this.currentTab = 0;
         this.isDocumentFocused = true;
+        this.isFullScreen = false;
         this.sitesIgnoreList = new Set([chrome.runtime.id, 'newtab', 'extensions']);
     }
     initFromSerialMap(serialMap) {
@@ -210,7 +216,11 @@ class StatisticsHandler {
         }
     }
     updateHostTimeData(hostname, tabId) {
-        if(!this.isDocumentFocused) {
+        if (!hostname || hostname.length === 0) {
+            return;
+        }
+        this.lastActiveHostname = hostname;
+        if(!this.isDocumentFocused && !this.isFullScreen) {
             console.log('Document is not focused, skip update');
             return;
         }
@@ -242,6 +252,9 @@ class StatisticsHandler {
         getActiveTab().then(this.updateStatisticsFromTab.bind(this), this.deactivateCurrentHost.bind(this));
     }
     deactivateTab(tabId) {
+        if(this.isFullScreen) {
+            return;
+        }
         console.log('Deactivate statistics timer for tabId: ' + tabId);
         for (let host in this.hostnameToTimeData) {
             const value = this.hostnameToTimeData[host];
@@ -254,6 +267,9 @@ class StatisticsHandler {
         }
     }
     deactivateHost(hostname) {
+        if(this.isFullScreen) {
+            return;
+        }
         console.log('Deactivate statistics timer for hostname: ' + hostname);
         let hostTimeData = this.hostnameToTimeData[hostname];
         if (hostTimeData) {
@@ -277,8 +293,21 @@ class StatisticsHandler {
             this.deactivateCurrentHost();
         }
     }
+    handleFullscreenChange(fullscreenState, hostname, tabId) {
+        if(fullscreenState) {
+            this.currentTab = tabId;
+            this.isFullScreen = true;
+            this.updateHostTimeData(hostname, tabId);
+        }
+        else {
+            this.isFullScreen = false;
+        }
+    }
     getLastHostname() {
         return this.lastHostname;
+    }
+    getLastActiveHostname() {
+        return this.lastActiveHostname;
     }
     getActiveTimeForHostname(hostname) {
         let hostData = this.hostnameToTimeData[hostname] ;
@@ -318,6 +347,7 @@ class CommunicationHandler {
         this.statisticsHandler = statisticsHandlerRef;
         this.messageHandlers = {
             "focusState" : this.onFocusStateMsg.bind(this),
+            "fullscreenState" : this.onFullscreenStateMsg.bind(this),
             "getStatistics": this.onGetStatisticsMsg.bind(this)};
         chrome.runtime.onMessage.addListener(this.onMessage.bind(this));
     }
@@ -325,6 +355,11 @@ class CommunicationHandler {
         let url = getHostnameOrUrl(message.url);
         console.log((message.focus === true? 'focus ' : 'blur ') + url);
         this.statisticsHandler.handleFocusChange(message.focus, url, sender.tab.id);
+    }
+    onFullscreenStateMsg(message, sender, _response) {
+        let url = getHostnameOrUrl(message.url);
+        console.log('Fullscreen ' + (message.fullscreen === true? 'on ' : 'off ') + url);
+        this.statisticsHandler.handleFullscreenChange(message.fullscreen, url, sender.tab.id);
     }
     onGetStatisticsMsg(message, sender, response) {
         response(this.statisticsHandler.getFormattedMap());
@@ -345,7 +380,7 @@ class CommunicationHandler {
             }
             chrome.tabs.sendMessage(activeTab.id, {name : "showModal", stat : formattedStat}, {}, (_response)=>{
                 if (chrome.runtime.lastError) {
-                    console.warn("Failed to show statistics: " + chrome.runtime.lastError.message);
+                    console.log("Failed to show statistics: " + chrome.runtime.lastError.message);
                 }
             });
         };
@@ -356,102 +391,256 @@ class CommunicationHandler {
             showStatisticTableOnActiveTab,
             logIfNoActiveTab);
     }
-    
-    showAccessBlockingAlert(alertInfo) {
-        if(this.lastAlertTime && Date.now() - this.lastAlertTime < 5000) {
+    showAccessBlockingMessage(message) {
+        let sendMessage = (activeTab)=> {
+            if(!message.includes(getHostnameOrUrl(activeTab.url))) {
+                return;
+            }
+            chrome.tabs.sendMessage(activeTab.id, {name : "showAccessBlockingMessage", message: message}, {}, (_response)=>{
+                if (chrome.runtime.lastError) {
+                    console.log("Failed to showAccessBlockingMessage: " + chrome.runtime.lastError.message);
+                }
+            });
+        };
+        let logIfNoActiveTab = ()=> {
+            console.log('No active tab!');
+        };
+        getActiveTab().then( 
+            sendMessage,
+            logIfNoActiveTab);
+    }
+    showAccessBlockingAlert(message) {
+        this.showAccessBlockingMessage(`Access to ${message.hostname} blocked! Reason: ${message.reason}`);
+    }
+}
+
+class AlertManager {
+    constructor() {
+        this.alertInfos = [];
+        this.activeAlerts = [];
+        this.dayOfWeek = getWeekDay();
+        setInterval(this.checkAlert.bind(this), 1000);
+    }
+    showAlert(message) {
+        alert(message);
+    }
+    checkAlert() {
+        let currentDayOfWeek = getWeekDay();
+        if(this.dayOfWeek != currentDayOfWeek) {
+            this.dayOfWeek = currentDayOfWeek;
+            this.updateCurrentDayAlerts();
+        }
+        let len = this.activeAlerts.length;
+        if(!len) {
             return;
         }
-        alert(`Access to ${alertInfo.hostname} blocked! Reason: ${alertInfo.reason}`);
-        this.lastAlertTime = Date.now();
+        let nextAlertIndex = len - 1; 
+        let currentTimeofDay = getCurrentTimeString();
+        if(this.activeAlerts[nextAlertIndex].time <= currentTimeofDay) {
+            this.showAlert(this.activeAlerts[nextAlertIndex].message);
+            this.activeAlerts.pop();
+        }
+    }
+    updateCurrentDayAlerts() {
+        let currentTimeofDay = getCurrentTimeString();
+        let activeAlerts = this.alertInfos.filter((value) => 
+            (value.days.includes('Every day') || value.days.includes(this.dayOfWeek)) && value.time > currentTimeofDay)
+                activeAlerts = activeAlerts.sort((a, b) =>  a.time > b.time  ? -1 : a.time === b.time? 0 : 1);
+        this.activeAlerts = activeAlerts;
+    }
+    updateAlertInfos(alertsInfos) {
+        this.alertInfos = alertsInfos;
+        this.dayOfWeek = getWeekDay();
+        this.updateCurrentDayAlerts();
+    }
+}
+
+function updateTableRows(tableName, tableData)
+{
+    let tableRows = tableData[tableName];
+    if(!tableRows) {
+        return;
+    }
+    let newValue = tableRows['newValue'];
+    if(newValue) {
+        return newValue;
+    }
+    return tableRows;
+}
+class SettingsPeriodTable {
+    constructor(name) {
+        this.name = name;
+        this.rows;
+        this.alertManager = new AlertManager(); 
+    }
+    includes(site) {
+        if(!this.rows) {
+            return {inList: false, isActiveRowsEmpty: true};
+        }
+
+        let rows = this.getActiveRows(site);
+        if(!rows.length) {
+            return {inList: false, isActiveRowsEmpty: true};
+        }
+        for(let row of rows) {
+            if(row.site.split(/\s|\n|\r/).includes(site)) {
+                return {inList: true, isActiveRowsEmpty: false};
+            }
+        }
+        return {inList: false, isActiveRowsEmpty: false};
+    }
+    getActiveRows() {
+        let rows = [];
+        let currentTimeofDay = getCurrentTimeString();
+        let currentDayOfWeek = getWeekDay();
+        for(let [i, row] of Object.entries(this.rows)) {
+            if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
+                let inList = currentTimeofDay >= row.timeStart && currentTimeofDay < row.timeEnd;
+                if(inList) {
+                    rows.push(row);
+                }
+            }
+        }
+        return rows;
+    }
+    update(tableData) {
+        let newRows = updateTableRows(this.name,tableData);
+        if(newRows) {
+            this.rows = newRows;
+            let alertInfosConverter = (rows) => {
+                let alertInfos = [];
+                for(let [i, row] of Object.entries(rows)) {
+                    alertInfos.push({time: row.timeStart, days: row.days, message: this.name + ': ' + row.site});
+                }
+                return alertInfos;
+            };
+            this.alertManager.updateAlertInfos(alertInfosConverter(newRows));
+        }
+    }
+}
+
+class SettingsIntervalTable {
+    constructor(name) {
+        this.name = name;
+        this.rows;
+    }
+    includes(siteToCheck) {
+        if(!this.rows) {
+            return false;
+        }
+        let currentDayOfWeek = getWeekDay();
+        
+        for(let [i, row] of Object.entries(this.rows)) {
+            if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
+                let sites = row.site.split(/\s|\n|\r/);
+                if(sites.includes(siteToCheck)) {
+                    let timeOnLimitedAccesSites = 0;
+                    for(let site of sites) {
+                        let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(site)
+                        timeOnLimitedAccesSites += activeTime;
+                    };
+                    let activeTimeStr = new Duration(timeOnLimitedAccesSites).toString();
+                    let rowTime = row.timeInterval + ":00";
+                    return  activeTimeStr > rowTime;
+                }
+            }
+        }
+        return false;
+    }
+    update(tableData) {
+        let newRows = updateTableRows(this.name,tableData);
+        if(newRows) {
+            this.rows = newRows;
+        }
     }
 }
 
 class AccessController {
     constructor(onAccessBlockedCallback) {
-        this.sitesBlackList = new Set();
-        this.sitesWhiteList = {};
-        this.sitesWithLimitedAccess = {};
+        this.blackList = new SettingsPeriodTable('Black List');
+        this.whiteList = new SettingsPeriodTable('White List');
+        this.limitedAccessList = new SettingsIntervalTable('Limited Access List');
         this.onAccessBlocked = onAccessBlockedCallback;
         chrome.webRequest.onBeforeRequest.addListener(
             this.onBeforeRequest.bind(this),
             {urls: ["*://*/*"]},
             ['blocking']);
     }
-    onBeforeRequest(details) {
-        let hostname = getHostname(details.initiator);
-        if(Object.entries(this.sitesWhiteList).length > 0 && !this.sitesWhiteList[hostname]) {
-            this.onAccessBlocked({
-                hostname: hostname,
-                reason: `${hostname} does not belong to the list of allowed sites!`
-            });
-            return {cancel: true};
+    isAccessBlocked(hostname) {
+        if(hostname !== window.eventHandler.statisticsHandler.getLastActiveHostname()) {
+            return false;
         }
-        if(this.sitesBlackList.has(hostname)) {
+        let result = this.whiteList.includes(hostname);
+        if(!result.isActiveRowsEmpty) {
+            if(result.inList) {
+                return false;
+            }
+            else {
+                this.onAccessBlocked({
+                    hostname: hostname,
+                    reason: `${hostname} does not belong to the list of allowed sites!`
+                });
+                return true;
+            }
+        }
+        if(this.blackList.includes(hostname).inList) {
             this.onAccessBlocked({
                 hostname: hostname,
                 reason: `${hostname} belong to the list of blocked sites!`
-            });
-            return {cancel: true};
+            })
+            return true;
         }
-        let maxAccessTime = this.sitesWithLimitedAccess[hostname];
-        if(!maxAccessTime) {
-            return {cancel: false};
-        }
-        let activeHostnameTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(hostname);
-        if(activeHostnameTime > maxAccessTime) {
+        if(this.limitedAccessList.includes(hostname)) {
             this.onAccessBlocked({
                 hostname: hostname,
-                reason: `${hostname} time limit - ${new Duration(maxAccessTime)} exceeeded!`
+                reason: `${hostname} time limit exceeded!`
             });
-            return {cancel: true};
+            return true;
         }
-        return {cancel: false};
+        return false;
     }
-    updateTimeLimits(timeLimits) {
-        this.sitesWithLimitedAccess = timeLimits;
-        // update blacklist
-        for(let site of this.sitesBlackList) {
-            if(!this.sitesWithLimitedAccess[site]) {
-                this.sitesBlackList.delete(site);
-            }
-        }
+    onBeforeRequest(details) {
+        let initiatorHostname = getHostname(details.initiator);
+        let urlHostname = getHostname(details.url);
+        let isBlocked = this.isAccessBlocked(initiatorHostname) || this.isAccessBlocked(urlHostname);
+        return {cancel: isBlocked};
+    }
+    updateLists(tableData) {
+        this.blackList.update(tableData);
+        this.whiteList.update(tableData);
+        this.limitedAccessList.update(tableData);
     }
 }
 
 class SettingsHandler {
     constructor(onSettingsUpdateCallback) {
         this.onSettingsUpdate = onSettingsUpdateCallback;
-        this.storageKeys = { settings : {
-            key : 'settings',
-            timeLimits : {
-                key: 'timeLimits'}}};
+        this.storageKeys = {
+            whiteList: 'White List',
+            blackList: 'Black List',
+            limitedAccessList: 'Limited Access List'};
         this.storage = new StorageWrapper();
+        this.onFail = (error) => {
+            console.warn('Failed to get settings: ' + error.message);
+        };
         chrome.storage.onChanged.addListener(this.onStorageChange.bind(this));
         this.init();  
     }
     init() {
         let onSuccess = (result) => {
-            if(!Object.entries(result).length) {
-                this.onSettingsUpdate({});
-            } else {
-                this.onSettingsUpdate(result[this.storageKeys.settings.key][this.storageKeys.settings.timeLimits.key]);
+            if(Object.entries(result).length) {
+                this.onSettingsUpdate(result);
             }
         };
-        let onFail = (error) => {
-            console.warn('Failed to get settings: ' + error.message);
-        };
-        this.storage.get(this.storageKeys.settings.key).then(onSuccess, onFail);
+        this.storage.get(this.storageKeys.whiteList).then(onSuccess, this.onFail);
+        this.storage.get(this.storageKeys.blackList).then(onSuccess, this.onFail);
+        this.storage.get(this.storageKeys.limitedAccessList).then(onSuccess, this.onFail);
     }
     onStorageChange(changes, areaName) {
         if(areaName !== 'local') {
             return;
         }
-        let settings = changes[this.storageKeys.settings.key];
-        if(!settings) {
-            return;
-        }
-        let newTimeLimits =  settings['newValue'][this.storageKeys.settings.timeLimits.key];
-        this.onSettingsUpdate(newTimeLimits);
+        this.onSettingsUpdate(changes);
     }
 }
 
@@ -462,7 +651,10 @@ class EventHandler {
         this.InitStatistics();
         this.communicationHandler = new CommunicationHandler(this.statisticsHandler);
         this.accessController = new AccessController(this.communicationHandler.showAccessBlockingAlert.bind(this.communicationHandler));
-        this.settings = new SettingsHandler(this.accessController.updateTimeLimits.bind(this.accessController));
+        let onSettingsUpdate = (changes) => {
+            this.accessController.updateLists(changes);
+        };
+        this.settings = new SettingsHandler(onSettingsUpdate);
         this.setListeners();
     }
     InitStatistics() {
@@ -525,6 +717,7 @@ class EventHandler {
             console.warn("Failed to get day from storage " + error.message);
         };
         this.storage.get(this.storageKeys.day).then(onSuccess, onFail);
+        this.statisticsHandler.updateActiveTabData();
     }
     setListeners() {
         chrome.tabs.onUpdated.addListener(this.onTabUpdate.bind(this));
@@ -532,7 +725,7 @@ class EventHandler {
         chrome.tabs.onRemoved.addListener(this.onTabRemoved.bind(this));
         setInterval(() => {
             this.checkDayChange();
-        }, 20000);
+        }, 5000);
     }
 }
 

@@ -157,10 +157,19 @@ function notifyFocusChange(isInFocus) {
     chrome.runtime.sendMessage(null, {name: message, url: document.URL, focus: isInFocus});
 }
 
+function notifyFullscreenChange(isFullscreen) {
+    let message = "fullscreenState";
+    chrome.runtime.sendMessage(null, {name: message, url: document.URL, fullscreen: isFullscreen});
+}
+
 window.onfocus = function() {
     notifyFocusChange(true);
 }
 window.onblur = function() {
+    if(document.activeElement.tagName.toLowerCase() === 'iframe') {
+        // when iframe is focused, document loses the focus
+        return;
+    }
     notifyFocusChange(false);
 }
 
@@ -170,11 +179,20 @@ document.onmouseenter = function() {
 document.onmouseleave = function() {
     notifyFocusChange(false);
 }
+document.onfullscreenchange = function() {
+    notifyFullscreenChange(document.fullscreenElement !== null);
+}
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.name == "showModal") {
             console.log("Show statistics!");
             showModal(request.stat);
+        }
+        else if(request.name == "showAccessBlockingMessage") {
+            console.log("show access blocking message!");
+            document.body.style="font-size: 20px; font-family: Arial, Helvetica, sans-serif; text-align: center; padding-top: 20%;";
+            document.body.innerHTML = request.message;
+            document.head.innerHTML = "";
         }
         sendResponse();
     }

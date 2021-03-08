@@ -1,95 +1,250 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Settings</title>
-    <style>
-        #main {
-            max-width: 50%;
+    <head>
+        <title>Settings</title>
+        <style>
+            .settings-container {
+                display: flex;
+                flex-direction: column;
+            }
+            .setting-section-caption {
+                caption-side: top;
+                text-align: center;
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            .settings-section {
+                flex-direction: column;
+                margin-bottom: 15px;
+            }
+            .settings-row {
+                flex-direction: row;
+                text-align: center;
+            }
+            .input-section {
+                margin-bottom: 5px;
+            }
+            .table-style {
+                flex-direction: column;
+                font-family: Arial, Helvetica, sans-serif;
+                border-collapse: collapse;
+                white-space: nowrap;
+            }
+            .table-style td,
+            .table-style th {
+                justify-content: center;
+                border: 1px solid #ddd;
+                padding: 3px;
+            }
+            .table-style thead {
+                background-color: #3367D6;
+                color: white;
+            }
+            .days-checkboxes {
+                display:flex;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 3px;
+            }
+            .settings-table-actions-style {
+                display:flex;
+                justify-content: center;
+                flex-direction: column;
+                padding: 3px;
+            }
+            .action-button {
+            background-color:#3367D6;
+            border: black;
+            align-items:center;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            margin: 3px;
+            transition-duration: 0.4s;
         }
-
-        #new-url-form {
-            display: flex;
+        button:focus{
+            outline:none;
         }
-
-        #new-url-form input {
-            border-radius: unset;
-            border: 1px solid gray;
-            flex: 1;
-            margin-right: 5px;
+        button:hover{
+            background: #2850A7;
+            box-shadow: 0 8px 10px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
         }
-
-        #new-url-form button {
-            height: 30px;
-            display: flex;
-            border: 1px solid gray;
-            align-items: center;
-        }
-
-        #new-url-form input:hover,
-        #new-url-form input:focus,
-        #new-url-form input:active {
-            outline: none;
-        }
-
-        #new-url-container {
-            display: flex;
-            width: 100%;
-            justify-content: stretch;
-        }
-
-        #time-limits table {
-            width: 50vw;
-        }
-
-        #time-limits table thead tr {
-            font-size: 14px;
-            font-weight: 700;
-        }
-    </style>
-</head>
-<body>
-<div id="main">
-    <form id="new-url-form" name="newUrlForm">
-        <div id="new-url-container">
-            <input
-                    type="text"
-                    placeholder="Add new URL"
-                    name="hostnameValue"
-                    pattern="(?:\w+\.)*\w+$"
-                    required
-            >
-            <input
-                    type="time"
-                    min="00:01"
-                    name="timeValue"
-                    required
-            >
-            <button id="add-new-url"><span>Add</span></button>
-        </div>
-    </form>
-    <div id="time-limits">
-        <table>
+        </style>
+        <link rel="icon" type="image/png" href="/icon32.png"/>
+    </head>
+    <template id="list-with-time-period-row-template" class="settings-row">
+        <tr>
+            <td name="site" style="white-space: pre-wrap;"></td>
+            <td name="timeStart"></td>
+            <td name="timeEnd"></td>
+            <td name="days"></td>
+            <td>
+                <div name="settings-table-actions" class="settings-table-actions-style">
+                    <button name="change" class="action-button">Change</button>
+                    <button name="duplicate" class="action-button">Duplicate</button>
+                    <button name="remove" class="action-button">Remove</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template id="list-with-time-period-template">
+        <div class="settings-section">
+        <table class="table-style">
+            <caption name="list-type" class="setting-section-caption"></caption>
             <thead>
-                <tr>
-                    <td>Hostname</td>
-                    <td>Time Limit</td>
-                    <th>Actions</th>
-                </tr>
+                <th>Site</th>
+                <th>Time Start</th>
+                <th>Time End</th>
+                <th>Days</th>
+                <th>Actions</th>
             </thead>
             <tbody>
+                <tr name="add-new-site-row" class="settings-row">
+                    <td>
+                        <textarea
+                            type="text"
+                            style="width: 200px; height: 150px"
+                            placeholder="Add new URLs"
+                            name="site"
+                            pattern="((?:\w+\.)+\w+(;*)(\s*))+"
+                            required
+                        ></textarea>
+                    </td>
+                    <td>
+                        <input
+                            type="time"
+                            min="00:01"
+                            name="timeStart"
+                            required
+                        >
+                    </td>
+                    <td>
+                        <input
+                            type="time"
+                            min="00:01"
+                            name="timeEnd"
+                            required
+                        >
+                    </td>
+                    <td class="days-checkboxes">
+                        <div>
+                            <input type="checkbox" name="Every day">Every day<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Sunday">Sunday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Monday">Monday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Tuesday">Tuesday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Wednesday">Wednesday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Thursday">Thursday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Friday">Friday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Saturday">Saturday<br>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="settings-table-actions-style">
+                            <button name="add-new-url" class="action-button">Add</button>
+                        </div>
+                    </td>
+                </tr>
             </tbody>
         </table>
-    </div>
-</div>
-<script src="options.js"></script>
-<template id="settings-table-row-template">
-    <tr class="settings-row">
-        <td class="hostname"></td>
-        <td class="time-limit"></td>
-        <td>
-            <button id="remove-hostname">Remove</button>
-        </td>
-    </tr>
-</template>
-</body>
+        </div>
+    </template>
+    <template id="list-with-time-interval-row-template" class="settings-row">
+        <tr>
+            <td name="site" style="white-space: pre-wrap;"></td>
+            <td name="timeInterval"></td>
+            <td name="days"></td>
+            <td>
+                <div name="settings-table-actions" class="settings-table-actions-style">
+                    <button name="change" class="action-button">Change</button>
+                    <button name="duplicate" class="action-button">Duplicate</button>
+                    <button name="remove" class="action-button">Remove</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template id="list-with-time-interval-template">
+        <div class="settings-section">
+        <table class="table-style">
+            <caption name="list-type" class="setting-section-caption"></caption>
+            <thead>
+                <th>Site</th>
+                <th>Time Interval</th>
+                <th>Days</th>
+                <th>Actions</th>
+            </thead>
+            <tbody>
+                <tr name="add-new-site-row" class="settings-row">
+                    <td>
+                        <textarea
+                            type="text"
+                            style="width: 200px; height: 150px"
+                            placeholder="Add new URLs"
+                            name="site"
+                            required
+                        ></textarea>
+                    </td>
+                    <td>
+                        <input
+                            type="time"
+                            min="00:01"
+                            name="timeInterval"
+                            required
+                        >
+                    </td>
+                    <td class="days-checkboxes">
+                        <div>
+                            <input type="checkbox" name="Every day">Every day<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Sunday">Sunday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Monday">Monday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Tuesday">Tuesday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Wednesday">Wednesday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Thursday">Thursday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Friday">Friday<br>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="Saturday">Saturday<br>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="settings-table-actions-style">
+                            <button name="add-new-url" class="action-button">Add</button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+    </template>
+    <body>
+        <div id="settings-container" class="settings-container">
+        </div>
+    </body>
+    <script src="options.js"></script>
 </html>

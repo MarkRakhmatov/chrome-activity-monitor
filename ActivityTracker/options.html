@@ -73,6 +73,58 @@
         </style>
         <link rel="icon" type="image/png" href="/icon32.png"/>
     </head>
+    <template id="categories-row-template" class="settings-row">
+        <tr>
+            <td name="category-name"></td>
+            <td name="category-sites" style="white-space: pre-wrap;"></td>
+            <td>
+                <div name="settings-table-actions" class="settings-table-actions-style">
+                    <button name="change" class="action-button">Change</button>
+                    <button name="duplicate" class="action-button">Duplicate</button>
+                    <button name="remove" class="action-button">Remove</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template id="categories-template">
+        <div class="settings-section">
+        <table class="table-style">
+            <caption name="list-type" class="setting-section-caption"></caption>
+            <thead>
+                <th>Category</th>
+                <th>Category sites</th>
+                <th>Actions</th>
+            </thead>
+            <tbody>
+                <tr name="add-new-site-row" class="settings-row">
+                    <td>
+                        <textarea
+                            type="text"
+                            style="width: 200px; height: 150px"
+                            placeholder="Category name"
+                            name="category-name"
+                            required
+                        ></textarea>
+                    </td>
+                    <td>
+                        <textarea
+                            type="text"
+                            style="width: 200px; height: 150px"
+                            placeholder="Category sites"
+                            name="category-sites"
+                            required
+                        ></textarea>
+                    </td>
+                    <td>
+                        <div class="settings-table-actions-style">
+                            <button name="add-new-category" class="action-button">Add</button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+    </template>
     <template id="list-with-time-period-row-template" class="settings-row">
         <tr>
             <td name="site" style="white-space: pre-wrap;"></td>
@@ -114,7 +166,6 @@
                     <td>
                         <input
                             type="time"
-                            min="00:01"
                             name="timeStart"
                             required
                         >

@@ -171,7 +171,7 @@ class SettingsGeneratingRow {
     }
 }
 
-class SectionWithTimePeriodBody {
+class SectionBody {
     constructor(cellNames, rowTemplateName, table,  settingsGeneratingRow) {
         this.cellNames = cellNames;
         this.rowTemplateName = rowTemplateName;
@@ -270,14 +270,93 @@ function timePeriodValidator(timeEndElement) {
     timeEndElement.setCustomValidity("\"Time End\" should be greater then \"Time Start\"");
     return timeEndElement.value.localeCompare(timeStart.value) > 0;
 };
+function categoryNameValidator(element) {
+    let categoryName = element.value;
+    const regSites = /^\w+$/;
+    element.setCustomValidity("Invalid syntax!");
+    return regSites.test(categoryName);
+};
 function sitesListValidator(sitesElement) {
     let sitesListstr = sitesElement.value;
-    let regSites = new RegExp("^(((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))\s*\n*\r*)+$");
+    const regSites = new RegExp("^(((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))\s*\n*\r*)+$");
     sitesElement.setCustomValidity("Invalid syntax!");
     return regSites.test(sitesListstr);
 };
 
-class SectionWithTimePeriod {
+class CategoryGeneratingRow {
+    constructor(table, inputnameToValidator) {
+        this.inputsNames = Object.keys(inputnameToValidator);
+        this.table = table;
+        this.inputs = {};
+        for(let [inputName, inputValidator] of Object.entries(inputnameToValidator)) {
+            this.inputs[inputName] = {
+                element : this.table.querySelector(`[name="${inputName}"]`),
+                validator : inputValidator
+            };
+        }
+        
+        let addButton = table.querySelector('button[name="add-new-category"]');
+        addButton.onclick = this.onAddNewCategory.bind(this);
+
+        this.onRowAddedCallback;
+    }
+    
+    setInputsData(newRowData) {
+        for(let inputName of this.inputsNames) {
+            this.inputs[inputName].element.value = newRowData[inputName];
+        }
+    }
+    cleanupInputs() {
+        for(let inputName of this.inputsNames) {
+            this.inputs[inputName].element.value = '';
+        }
+    }
+    onAddNewCategory() {
+        let newRowData = {};
+        for(let [_key, value] of Object.entries(this.inputs)) {
+            if (!value.validator(value.element)) {
+                value.element.reportValidity();
+                return;
+            }
+            newRowData[value.element.name] = value.element.value.trim();
+        }
+
+        this.onRowAddedCallback(newRowData, 2);
+        this.cleanupInputs();
+    }
+}
+
+class SectionCategories {
+    constructor(sectionName, tableTemplateName, rowTemplateName, cellNames, inputnameToValidator) {
+        this.sectionName = sectionName;
+        let tableTemplate = document.getElementById(tableTemplateName);
+        let tableNode = createNodeFromTemplate(tableTemplate);
+        tableNode.querySelector('table[class="table-style"]').setAttribute('name', this.sectionName);
+        let caption = tableNode.querySelector('caption[name="list-type"]');
+        caption.innerHTML = sectionName;
+        
+        this.rootNode = document.getElementById('settings-container');
+        this.listWithTimePeriodNode = this.rootNode.appendChild(tableNode);
+        this.settingsTable = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
+        
+        this.categoryGeneratingRow = new CategoryGeneratingRow(this.settingsTable, inputnameToValidator);
+        
+        this.settingsTableBody = new SectionBody(cellNames, rowTemplateName, this.settingsTable, this.categoryGeneratingRow);
+        this.categoryGeneratingRow.onRowAddedCallback = this.settingsTableBody.addNewRow.bind(this.settingsTableBody);
+    }
+    initFromStorage(storageObject) {
+        if(!Object.entries(storageObject).length) {
+            return;
+        }
+        this.settingsTableBody.initFromStorage(storageObject[this.sectionName]);
+    }
+    setSectionChangeListener(listener) {
+        this.settingsTableBody.onSectionChangedCallback = listener;
+    }
+}
+
+
+class SettingsSection {
     constructor(sectionName, tableTemplateName, rowTemplateName, cellNames, inputnameToValidator) {
         this.sectionName = sectionName;
         let tableTemplate = document.getElementById(tableTemplateName);
@@ -292,7 +371,7 @@ class SectionWithTimePeriod {
         
         this.settingsGeneratingRow = new SettingsGeneratingRow(this.settingsTable, inputnameToValidator);
         
-        this.settingsTableBody = new SectionWithTimePeriodBody(cellNames, rowTemplateName, this.settingsTable, this.settingsGeneratingRow);
+        this.settingsTableBody = new SectionBody(cellNames, rowTemplateName, this.settingsTable, this.settingsGeneratingRow);
         this.settingsGeneratingRow.onRowAddedCallback = this.settingsTableBody.addNewRow.bind(this.settingsTableBody);
     }
     initFromStorage(storageObject) {
@@ -321,6 +400,24 @@ class SectionUpdateHandler {
             this.settingsSection.initFromStorage.bind(this.settingsSection));
     }
 }
+
+function createCategoriesSection(sectionName)
+{
+    let tableTemplateName = 'categories-template';
+    let rowTemplateName = 'categories-row-template';
+    let cellNames = ['category-name', 'category-sites'];
+    let inputnameToValidator = {
+        'category-name' : categoryNameValidator,
+        'category-sites' : sitesListValidator
+    };
+    return new SectionCategories(
+        sectionName, 
+        tableTemplateName, 
+        rowTemplateName, 
+        cellNames, 
+        inputnameToValidator);
+}
+
 function createTimePeriodSection(sectionName)
 {
     let tableTemplateName = 'list-with-time-period-template';
@@ -330,7 +427,7 @@ function createTimePeriodSection(sectionName)
         'site' : sitesListValidator,
         'timeStart' : defaultInputValidator,
         'timeEnd' : timePeriodValidator};
-    return new SectionWithTimePeriod(
+    return new SettingsSection(
         sectionName, 
         tableTemplateName, 
         rowTemplateName, 
@@ -345,15 +442,19 @@ function createTimeIntervalSection(sectionName)
     let inputnameToValidator = {
         'site' : sitesListValidator,
         'timeInterval' : defaultInputValidator};
-    return new SectionWithTimePeriod(
+    return new SettingsSection(
         sectionName, 
         tableTemplateName, 
         rowTemplateName, 
         cellNames, 
         inputnameToValidator);
 }
+
 class Settings {
     constructor() {
+        let categories = 'Categories';
+        this.categoriesSection = new SectionUpdateHandler(
+            createCategoriesSection(categories));
         let blackList = 'Black List';
         this.blackListSection = new SectionUpdateHandler(
             createTimePeriodSection(blackList));

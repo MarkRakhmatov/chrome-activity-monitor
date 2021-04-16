@@ -272,13 +272,13 @@ function timePeriodValidator(timeEndElement) {
 };
 function categoryNameValidator(element) {
     let categoryName = element.value;
-    const regSites = /^\w+$/;
+    const regCategory = /^\w+$/;
     element.setCustomValidity("Invalid syntax!");
-    return regSites.test(categoryName);
+    return regCategory.test(categoryName);
 };
 function sitesListValidator(sitesElement) {
     let sitesListstr = sitesElement.value;
-    const regSites = new RegExp("^(((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))\s*\n*\r*)+$");
+    const regSites = new RegExp("^((((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))\s*\n*\r*)|\w)+$");
     sitesElement.setCustomValidity("Invalid syntax!");
     return regSites.test(sitesListstr);
 };
@@ -405,10 +405,10 @@ function createCategoriesSection(sectionName)
 {
     let tableTemplateName = 'categories-template';
     let rowTemplateName = 'categories-row-template';
-    let cellNames = ['category-name', 'category-sites'];
+    let cellNames = ['categoryName', 'categorySites'];
     let inputnameToValidator = {
-        'category-name' : categoryNameValidator,
-        'category-sites' : sitesListValidator
+        'categoryName' : categoryNameValidator,
+        'categorySites' : sitesListValidator
     };
     return new SectionCategories(
         sectionName, 

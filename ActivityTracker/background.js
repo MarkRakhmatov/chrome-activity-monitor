@@ -467,23 +467,71 @@ function updateTableRows(tableName, tableData)
     }
     return tableRows;
 }
+class SettingsCategories {
+    constructor(name) {
+        this.name = name;
+        this.rows;
+    }
+    getSites(categoryName) {
+        if(!this.rows) {
+            return "";
+        }
+        for(let row of this.rows) {
+            if(row.categoryName === categoryName) {
+                return row.categorySites;
+            }
+        }
+        return "";
+    }
+    update(tableData) {
+        let newRows = updateTableRows(this.name,tableData);
+        if(!newRows) {
+            return;
+        }
+        this.rows = newRows;
+    }
+}
+
+function ForEachSite(sitesOrCategories, functor) {
+    const regCategory = /^\w+$/;
+    for(let siteOrCategory of sitesOrCategories) {
+        if(regCategory.test(siteOrCategory)) {
+            // get category sites
+            let categorySites = window.eventHandler.accessController.categories.getSites(siteOrCategory).split(/\s|\n|\r/);
+            for(let site of categorySites) {
+                let done = functor(site);
+                if(done) {
+                    return true;
+                }
+            }
+        } else {
+            let done = functor(siteOrCategory);
+            if(done) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 class SettingsPeriodTable {
     constructor(name) {
         this.name = name;
         this.rows;
         this.alertManager = new AlertManager(); 
     }
-    includes(site) {
+    includes(siteToCheck) {
         if(!this.rows) {
             return {inList: false, isActiveRowsEmpty: true};
         }
 
-        let rows = this.getActiveRows(site);
+        let rows = this.getActiveRows();
         if(!rows.length) {
             return {inList: false, isActiveRowsEmpty: true};
         }
         for(let row of rows) {
-            if(row.site.split(/\s|\n|\r/).includes(site)) {
+            let siteFound = ForEachSite(row.site.split(/\s|\n|\r/), (site)=>{ return site == siteToCheck});
+            if(siteFound) {
                 return {inList: true, isActiveRowsEmpty: false};
             }
         }
@@ -505,17 +553,19 @@ class SettingsPeriodTable {
     }
     update(tableData) {
         let newRows = updateTableRows(this.name,tableData);
-        if(newRows) {
-            this.rows = newRows;
-            let alertInfosConverter = (rows) => {
-                let alertInfos = [];
-                for(let [i, row] of Object.entries(rows)) {
-                    alertInfos.push({time: row.timeStart, days: row.days, message: this.name + ': ' + row.site});
-                }
-                return alertInfos;
-            };
-            this.alertManager.updateAlertInfos(alertInfosConverter(newRows));
+        if(!newRows) {
+            return;
         }
+        
+        this.rows = newRows;
+        let alertInfosConverter = (rows) => {
+            let alertInfos = [];
+            for(let [i, row] of Object.entries(rows)) {
+                alertInfos.push({time: row.timeStart, days: row.days, message: this.name + ': ' + row.site});
+            }
+            return alertInfos;
+        };
+        this.alertManager.updateAlertInfos(alertInfosConverter(newRows));
     }
 }
 
@@ -533,12 +583,16 @@ class SettingsIntervalTable {
         for(let [i, row] of Object.entries(this.rows)) {
             if(row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
                 let sites = row.site.split(/\s|\n|\r/);
-                if(sites.includes(siteToCheck)) {
-                    let timeOnLimitedAccesSites = 0;
-                    for(let site of sites) {
-                        let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(site)
-                        timeOnLimitedAccesSites += activeTime;
-                    };
+                let siteFound = false;
+                let timeOnLimitedAccesSites = 0;
+                ForEachSite(sites, (site)=>{ 
+                    if(!siteFound && site == siteToCheck) {
+                        siteFound = true;
+                    }
+                    let activeTime = window.eventHandler.statisticsHandler.getActiveTimeForHostname(site)
+                    timeOnLimitedAccesSites += activeTime;
+                });
+                if(siteFound) {
                     let activeTimeStr = new Duration(timeOnLimitedAccesSites).toString();
                     let rowTime = row.timeInterval + ":00";
                     return  activeTimeStr > rowTime;
@@ -557,6 +611,7 @@ class SettingsIntervalTable {
 
 class AccessController {
     constructor(onAccessBlockedCallback) {
+        this.categories = new SettingsCategories('Categories')
         this.blackList = new SettingsPeriodTable('Black List');
         this.whiteList = new SettingsPeriodTable('White List');
         this.limitedAccessList = new SettingsIntervalTable('Limited Access List');
@@ -606,6 +661,7 @@ class AccessController {
         return {cancel: isBlocked};
     }
     updateLists(tableData) {
+        this.categories.update(tableData);
         this.blackList.update(tableData);
         this.whiteList.update(tableData);
         this.limitedAccessList.update(tableData);
@@ -616,6 +672,7 @@ class SettingsHandler {
     constructor(onSettingsUpdateCallback) {
         this.onSettingsUpdate = onSettingsUpdateCallback;
         this.storageKeys = {
+            categories: 'Categories',
             whiteList: 'White List',
             blackList: 'Black List',
             limitedAccessList: 'Limited Access List'};
@@ -632,6 +689,7 @@ class SettingsHandler {
                 this.onSettingsUpdate(result);
             }
         };
+        this.storage.get(this.storageKeys.categories).then(onSuccess, this.onFail);
         this.storage.get(this.storageKeys.whiteList).then(onSuccess, this.onFail);
         this.storage.get(this.storageKeys.blackList).then(onSuccess, this.onFail);
         this.storage.get(this.storageKeys.limitedAccessList).then(onSuccess, this.onFail);

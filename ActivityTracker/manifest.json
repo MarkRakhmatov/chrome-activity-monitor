@@ -10,11 +10,11 @@
   "webRequestBlocking",
   "*://*/*"],
   "content_scripts": [{ 
-    "js": [ "modal.js"],
+    "js": [ "js/modal.js"],
     "matches": [ "*://*/*"]
   }],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["js/background.js"],
     "persistent": true
   },
   "manifest_version": 2,
@@ -25,10 +25,10 @@
   "browser_action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16" : "icon16.png",
-      "32" : "icon32.png",
-      "48" : "icon48.png",
-      "128" : "icon128.png"
+      "16" : "img/icon16.png",
+      "32" : "img/icon32.png",
+      "48" : "img/icon48.png",
+      "128" : "img/icon128.png"
     }
   }
 }

@@ -1,0 +1,42 @@
+{
+    "name": "Activity monitor",
+    "version": "1.01",
+    "description": "User activity monitor!",
+    "permissions": [
+        "tabs",
+        "storage",
+        "webRequest",
+        "webRequestBlocking",
+        "*://*/*"
+    ],
+    "content_scripts": [
+        {
+            "js": [
+                "modal.js"
+            ],
+            "matches": [
+                "*://*/*"
+            ]
+        }
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ],
+        "persistent": true
+    },
+    "manifest_version": 2,
+    "options_ui": {
+        "page": "index.html",
+        "open_in_tab": true
+    },
+    "browser_action": {
+        "default_popup": "index.html",
+        "default_icon": {
+            "16": "icon16.png",
+            "32": "icon32.png",
+            "48": "icon48.png",
+            "128": "icon128.png"
+        }
+    }
+}

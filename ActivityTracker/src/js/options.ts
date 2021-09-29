@@ -1,5 +1,3 @@
-(function () {
-
 class StorageWrapper {
     set(key, value) {
         return new Promise((resolve, reject) => {
@@ -369,4 +367,3 @@ class Settings {
 }
 
     window.settingsView = new Settings();
-})();

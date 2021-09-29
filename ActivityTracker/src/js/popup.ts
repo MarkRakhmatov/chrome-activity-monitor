@@ -1,14 +1,11 @@
-'use strict';
-(function(){
 let isStatDisplayed = false;
+
 function showStatistics() {
-    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) =>
-    {
+    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response: any) => {
         let table = document.getElementById('statisticsTable');
         let tbodyRef = table.getElementsByTagName('tbody')[0];
         let statisticsMap = JSON.parse(response);
-        for(let key in statisticsMap)
-        {
+        for (let key in statisticsMap) {
             let newRow = tbodyRef.insertRow();
             newRow.insertCell().appendChild(document.createTextNode(key));
             newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
@@ -28,11 +25,10 @@ function hideStatistics() {
 
 function toggleStatistics() {
     let statButton = document.getElementById('Statistics');
-    if(isStatDisplayed) {
+    if (isStatDisplayed) {
         hideStatistics();
         statButton.innerText = 'Show statistics';
-    }
-    else {
+    } else {
         showStatistics();
         statButton.innerText = 'Hide statistics';
     }
@@ -49,6 +45,12 @@ function openOptions() {
 
 //An Alarm delay of less than the minimum 1 minute will fire
 // in approximately 1 minute incriments if released
-document.getElementById('Statistics').addEventListener('click', toggleStatistics);
-document.getElementById('Settings').addEventListener('click', openOptions);
-})()
+const statistics = document.getElementById('Statistics');
+if (statistics) {
+    statistics.addEventListener('click', toggleStatistics);
+}
+
+const settings = document.getElementById('Settings');
+if (settings) {
+    settings.addEventListener('click', openOptions);
+}

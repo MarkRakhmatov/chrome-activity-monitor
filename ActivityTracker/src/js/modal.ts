@@ -27,7 +27,7 @@ function showModal(stat) {
         return;
     }
     const modal = document.createElement("dialog");
-    modal.setAttribute("style", 
+    modal.setAttribute("style",
     `
     display: flex;
     flex-direction: column;
@@ -44,7 +44,7 @@ function showModal(stat) {
     min-width: 260px;
     `);
     modal.setAttribute("id", "StatisticsModalWindow");
-    modal.innerHTML = 
+    modal.innerHTML =
     `
     <div>
     <div style="

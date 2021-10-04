@@ -1,5 +1,3 @@
-import './../css/styles.css';
-
 function getHostname(urlString: string) {
     try {
         return new URL(urlString).hostname;

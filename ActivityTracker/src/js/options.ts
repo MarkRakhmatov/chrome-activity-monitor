@@ -1,3 +1,5 @@
+import './../css/options.css';
+
 class StorageWrapper {
     set(key, value) {
         return new Promise((resolve, reject) => {
@@ -128,13 +130,13 @@ class SettingsGeneratingRow {
         }
         this.table.querySelector('[class="days-checkboxes"]');
         this.daysCheckBoxes = new DaysCheckboxes(table);
-        
+
         let addButton = table.querySelector('button[name="add-new-url"]');
         addButton.onclick = this.onAddNewSite.bind(this);
 
         this.onRowAddedCallback;
     }
-    
+
     setInputsData(newRowData) {
         for(let inputName of this.inputsNames) {
             this.inputs[inputName].element.value = newRowData[inputName];
@@ -201,7 +203,7 @@ class SectionWithTimePeriodBody {
     }
     getRowData(row) {
         let rowData = {};
-        
+
         for(let cellName of this.cellNames) {
             rowData[cellName] = this.getCellData(row, cellName);
         }
@@ -245,7 +247,7 @@ class SectionWithTimePeriodBody {
     }
     addNewRow(newRowData, index) {
         let newRow = createNodeFromTemplate(document.getElementById(this.rowTemplateName));
-        
+
         for(let cellName of this.cellNames) {
             this.setCellValue(newRow, cellName, newRowData[cellName]);
         }
@@ -283,13 +285,13 @@ class SectionWithTimePeriod {
         tableNode.querySelector('table[class="table-style"]').setAttribute('name', this.sectionName);
         let caption = tableNode.querySelector('caption[name="list-type"]');
         caption.innerHTML = sectionName;
-        
+
         this.rootNode = document.getElementById('settings-container');
         this.listWithTimePeriodNode = this.rootNode.appendChild(tableNode);
         this.settingsTable = this.rootNode.querySelector(`table[name="${this.sectionName}"]`);
-        
+
         this.settingsGeneratingRow = new SettingsGeneratingRow(this.settingsTable, inputnameToValidator);
-        
+
         this.settingsTableBody = new SectionWithTimePeriodBody(cellNames, rowTemplateName, this.settingsTable, this.settingsGeneratingRow);
         this.settingsGeneratingRow.onRowAddedCallback = this.settingsTableBody.addNewRow.bind(this.settingsTableBody);
     }
@@ -329,10 +331,10 @@ function createTimePeriodSection(sectionName)
         'timeStart' : defaultInputValidator,
         'timeEnd' : timePeriodValidator};
     return new SectionWithTimePeriod(
-        sectionName, 
-        tableTemplateName, 
-        rowTemplateName, 
-        cellNames, 
+        sectionName,
+        tableTemplateName,
+        rowTemplateName,
+        cellNames,
         inputnameToValidator);
 }
 function createTimeIntervalSection(sectionName)
@@ -344,10 +346,10 @@ function createTimeIntervalSection(sectionName)
         'site' : sitesListValidator,
         'timeInterval' : defaultInputValidator};
     return new SectionWithTimePeriod(
-        sectionName, 
-        tableTemplateName, 
-        rowTemplateName, 
-        cellNames, 
+        sectionName,
+        tableTemplateName,
+        rowTemplateName,
+        cellNames,
         inputnameToValidator);
 }
 class Settings {
@@ -355,11 +357,11 @@ class Settings {
         let blackList = 'Black List';
         this.blackListSection = new SectionUpdateHandler(
             createTimePeriodSection(blackList));
-        
+
         let whiteList = 'White List';
         this.whiteListSection = new SectionUpdateHandler(
             createTimePeriodSection(whiteList));
-        
+
         let limitedAccessList = 'Limited Access List';
         this.limitedAccesSsection = new SectionUpdateHandler(
             createTimeIntervalSection(limitedAccessList));

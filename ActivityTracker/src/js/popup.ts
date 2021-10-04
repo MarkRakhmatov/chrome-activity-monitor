@@ -1,56 +1,85 @@
-let isStatDisplayed = false;
+import './../css/popup.css';
+import {ToggleStatistic} from "./enums/toggleStatistic";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-function showStatistics() {
-    chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response: any) => {
-        let table = document.getElementById('statisticsTable');
-        let tbodyRef = table.getElementsByTagName('tbody')[0];
-        let statisticsMap = JSON.parse(response);
-        for (let key in statisticsMap) {
-            let newRow = tbodyRef.insertRow();
-            newRow.insertCell().appendChild(document.createTextNode(key));
-            newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
+const CLASS_HIDDEN = 'visually-hidden';
+
+export class StatisticComponent {
+    private table: HTMLElement;
+    private statisticsBtnId: HTMLElement;
+    private isStatDisplayed: boolean;
+
+    constructor(statisticsBtnId: HTMLElement, tableStatisticId: string) {
+        this.table = document.getElementById(tableStatisticId);
+        this.statisticsBtnId = statisticsBtnId;
+    }
+
+    public toggleStatistics() {
+        if (this.isStatDisplayed) {
+            this.hideStatistics();
+            this.statisticsBtnId.innerHTML = ToggleStatistic.OPEN;
+        } else {
+            this.showStatistics();
+            this.statisticsBtnId.innerHTML = ToggleStatistic.CLOSE;
         }
-        table.style.display = "table";
-    });
-}
-
-function hideStatistics() {
-    let table = document.getElementById('statisticsTable');
-    table.style.display = "none";
-    let tbodyRef = table.getElementsByTagName('tbody')[0];
-    let new_tbody = document.createElement('tbody');
-    tbodyRef.parentNode.replaceChild(new_tbody, tbodyRef);
-}
-
-
-function toggleStatistics() {
-    let statButton = document.getElementById('Statistics');
-    if (isStatDisplayed) {
-        hideStatistics();
-        statButton.innerText = 'Show statistics';
-    } else {
-        showStatistics();
-        statButton.innerText = 'Hide statistics';
+        this.isStatDisplayed = !this.isStatDisplayed;
     }
-    isStatDisplayed = !isStatDisplayed;
-}
 
-function openOptions() {
-    if (chrome.runtime.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-    } else {
-        window.open(chrome.runtime.getURL('options.html'));
+    private hideStatistics() {
+        this.table.classList.add(CLASS_HIDDEN);
+        const tbodyRef = this.table.getElementsByTagName('tbody')[0];
+        tbodyRef.innerHTML = '';
+    }
+
+
+    private showStatistics() {
+        chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) => {
+            const tbodyRef = this.table.getElementsByTagName('tbody')[0];
+            const statisticsMap = JSON.parse(response);
+            const tmpl = (name, value) => `<tr>
+                                                <td>${name}</td>
+                                                <td>${value}</td>
+                                           </tr>`;
+            const html = Object.keys(statisticsMap).reduce((acc, value) => {
+                acc += tmpl(value, statisticsMap[value]);
+                return acc;
+            }, '');
+            tbodyRef.insertAdjacentHTML('beforeend', html);
+            this.table.classList.remove(CLASS_HIDDEN);
+        });
     }
 }
 
-//An Alarm delay of less than the minimum 1 minute will fire
-// in approximately 1 minute incriments if released
-const statistics = document.getElementById('Statistics');
-if (statistics) {
-    statistics.addEventListener('click', toggleStatistics);
+export class PopupComponent {
+    public statisticsBtn: HTMLElement;
+    private settingBtnId: HTMLElement;
+    private readonly statisticComponent: StatisticComponent;
+
+    constructor(statisticsBtnId: string, settingBtnId: string, tableStatisticId: string) {
+        this.statisticsBtn = document.getElementById(statisticsBtnId);
+        this.settingBtnId = document.getElementById(settingBtnId);
+        this.statisticComponent = new StatisticComponent(this.statisticsBtn, tableStatisticId);
+    }
+
+    init() {
+        this.addListeners();
+    }
+
+    addListeners() {
+        this.statisticsBtn.addEventListener('click', this.statisticComponent.toggleStatistics.bind(this.statisticComponent));
+        this.settingBtnId.addEventListener('click', this.openOptions.bind(this));
+    }
+
+    openOptions() {
+        if (chrome.runtime.openOptionsPage) {
+            chrome.runtime.openOptionsPage();
+        } else {
+            window.open(chrome.runtime.getURL('options.html'));
+        }
+    }
 }
 
-const settings = document.getElementById('Settings');
-if (settings) {
-    settings.addEventListener('click', openOptions);
-}
+document.addEventListener("DOMContentLoaded", () => {
+    const popupComponent = new PopupComponent('statistics', 'settings', 'statisticsTable');
+    popupComponent.init();
+});

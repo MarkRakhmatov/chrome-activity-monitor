@@ -8,25 +8,60 @@ const filename = ext => `[name].${ext}`;
 
 module.exports = {
     entry: {
-        popup: './src/js/popup.ts',
-        background: './src/js/background.ts',
-        modal: './src/js/modal.ts',
-        options: './src/js/options.ts'
+        popup: path.join(__dirname, './src/js/popup.ts'),
+        background: path.join(__dirname, './src/js/background.ts'),
+        modal: path.join(__dirname, './src/js/modal.ts'),
+        options: path.join(__dirname, './src/js/options.ts')
     },
     module: {
-        rules: [{test: /\.ts?$/, use: 'ts-loader', exclude: /node_modules/},
+        rules: [
+            {
+                test: /\.ts?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/
+            },
             {
                 test: /\.css$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader']
-            },],
+            },
+            {
+                test: /\.(scss)$/,
+                use: [{
+                    loader: 'style-loader'
+                }, {
+                    loader: 'css-loader'
+                }, {
+                    loader: 'postcss-loader',
+                    options: {
+                        postcssOptions: {
+                            plugins: function () {
+                                return [
+                                    require('autoprefixer')
+                                ];
+                            }
+                        }
+                    }
+                }, {
+                    loader: 'sass-loader'
+                }]
+            }
+        ],
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
     },
     plugins: [
         new CleanWebpackPlugin({cleanStaleWebpackAssets: false}),
-        new HtmlWebpackPlugin({template: 'src/popup.html'}),
-        new HtmlWebpackPlugin({template: 'src/options.html'}),
+        new HtmlWebpackPlugin({
+            template: path.join(__dirname, 'src', 'popup.html'),
+            filename: 'popup.html',
+            chunks: ['popup']
+        }),
+        new HtmlWebpackPlugin({
+            template: path.join(__dirname, 'src', 'options.html'),
+            filename: 'options.html',
+            chunks: ['options']
+        }),
         new CopyWebpackPlugin({
             patterns: [
                 {from: './src/manifest.json'},

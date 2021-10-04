@@ -1,0 +1,79 @@
+.settings-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.setting-section-caption {
+    caption-side: top;
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.settings-section {
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.settings-row {
+    flex-direction: row;
+    text-align: center;
+}
+
+.input-section {
+    margin-bottom: 5px;
+}
+
+.table-style {
+    flex-direction: column;
+    font-family: Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    white-space: nowrap;
+}
+
+.table-style td,
+.table-style th {
+    justify-content: center;
+    border: 1px solid #ddd;
+    padding: 3px;
+}
+
+.table-style thead {
+    background-color: #3367D6;
+    color: white;
+}
+
+.days-checkboxes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 3px;
+}
+
+.settings-table-actions-style {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    padding: 3px;
+}
+
+.action-button {
+    background-color: #3367D6;
+    border: black;
+    align-items: center;
+    text-align: center;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    margin: 3px;
+    transition-duration: 0.4s;
+}
+
+button:focus {
+    outline: none;
+}
+
+button:hover {
+    background: #2850A7;
+    box-shadow: 0 8px 10px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+}

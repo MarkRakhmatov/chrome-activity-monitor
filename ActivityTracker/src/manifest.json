@@ -27,11 +27,11 @@
     },
     "manifest_version": 2,
     "options_ui": {
-        "page": "index.html",
+        "page": "options.html",
         "open_in_tab": true
     },
     "browser_action": {
-        "default_popup": "index.html",
+        "default_popup": "popup.html",
         "default_icon": {
             "16": "icon16.png",
             "32": "icon32.png",

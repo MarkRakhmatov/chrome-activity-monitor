@@ -1,4 +1,6 @@
 import './../css/options.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './app/index';
 
 class StorageWrapper {
     set(key, value) {
@@ -37,11 +39,14 @@ class StorageWrapper {
 }
 
 function createNodeFromTemplate(template) {
-    let newNode = document.importNode(template.content, true);
-    return newNode;
+    return document.importNode(template.content, true);
 }
 
 class DaysCheckboxes {
+    private everyDayCheckbox: any;
+    private readonly days: string[];
+    private checkboxes: any;
+
     constructor(parentNode) {
         this.everyDayCheckbox = parentNode.querySelector('input[name="Every day"]');
         this.everyDayCheckbox.setCustomValidity("Select at least one day!");

@@ -1,8 +1,8 @@
 import {Component, Inject, OnInit} from '@angular/core';
 import {TAB_ID} from '../../../../providers/tab-id.provider';
 import {StatisticsService} from "../../services/statistics.service";
-import {Subject} from "rxjs";
 import {StatisticInterface} from "../../types/statistic.interface";
+import {Subject} from "rxjs/internal/Subject";
 
 @Component({
   selector: 'app-popup',
@@ -11,7 +11,7 @@ import {StatisticInterface} from "../../types/statistic.interface";
 })
 export class PopupComponent implements OnInit {
   message: string;
-  statistic: Subject<StatisticInterface[]> = this.statisticService.getStatistic();
+  statistic$: Subject<StatisticInterface[]>;
 
   constructor(@Inject(TAB_ID) readonly tabId: number,
               private statisticService: StatisticsService) {
@@ -21,4 +21,7 @@ export class PopupComponent implements OnInit {
 
   }
 
+  showStatistic() {
+    this.statistic$ = this.statisticService.getStatistic();
+  }
 }

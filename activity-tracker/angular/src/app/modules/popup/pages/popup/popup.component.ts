@@ -10,18 +10,16 @@ import {Subject} from "rxjs/internal/Subject";
   styleUrls: ['popup.component.scss']
 })
 export class PopupComponent implements OnInit {
-  message: string;
-  statistic$: Subject<StatisticInterface[]>;
+  statistic$: Subject<StatisticInterface[]> = this.statisticService.statistic;
 
   constructor(@Inject(TAB_ID) readonly tabId: number,
               private statisticService: StatisticsService) {
   }
 
   ngOnInit(): void {
-
   }
 
   showStatistic() {
-    this.statistic$ = this.statisticService.getStatistic();
+    this.statisticService.getStatistic();
   }
 }

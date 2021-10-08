@@ -1,7 +1,6 @@
 import {Injectable} from '@angular/core';
 import {Subject} from "rxjs";
 import {StatisticInterface} from "../types/statistic.interface";
-import {of} from "rxjs/internal/observable/of";
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +12,7 @@ export class StatisticsService {
   constructor() {
   }
 
+
   getStatistic(): Subject<StatisticInterface[]> {
     chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) => {
       const json = JSON.parse(response);
@@ -22,8 +22,7 @@ export class StatisticsService {
           duration: json[key]
         }
       });
-
-      return of(statistic);
+      this.statistic.next(statistic);
     });
 
     return this.statistic;

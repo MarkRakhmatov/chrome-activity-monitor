@@ -1,0 +1,54 @@
+* {
+  box-sizing: border-box;
+}
+
+.popup {
+  padding: 10px;
+  min-width: 425px;
+  transition: all 0.3s;
+}
+
+.popup button {
+  width: 125px;
+}
+
+.popup-content {
+  animation-duration: 1.5s;
+  animation-name: fadeIn;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #c4c3c3;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb {
+  background: white;
+  border: 1px solid rgb(43, 43, 43);
+}
+
+#statisticsTable th {
+  background-color: #3367D6;
+  color: white;
+}
+
+#statisticsTable {
+  margin-top: 25px;
+}
+
+@keyframes fadeIn {
+  from {
+    margin-left: 100%;
+    width: 300%;
+  }
+
+  to {
+    margin-left: 0;
+    width: 100%;
+  }
+}

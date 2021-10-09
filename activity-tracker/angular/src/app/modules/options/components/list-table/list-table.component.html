@@ -1,7 +1,7 @@
-<h1 class="text-center">Title list</h1>
+<h1 class="text-center">{{title}}</h1>
 
 <div class="container">
-  <form class="settings-section" [formGroup]="formGroup" (ngSubmit)="addRules()">
+  <form class="settings-section" [formGroup]="formGroup" (ngSubmit)="addRules($event)">
     <table class="table table-striped table-bordered">
       <thead>
       <th scope="col">Site</th>
@@ -35,7 +35,8 @@
             class="form-control mt-4"
             [ngClass]="{
             'is-valid': formGroup.controls.startDate.valid,
-            'is-invalid': formGroup.controls.startDate.invalid && formGroup.controls.startDate.touched
+            'is-invalid': (formGroup.controls.startDate.invalid ||
+            formGroup.hasError('rangeDateValid')) && formGroup.controls.startDate.touched
             }"
             type="time"
             formControlName="startDate"
@@ -43,7 +44,7 @@
             name="timeStart"
             required>
           <div class="invalid-feedback">
-            Date is required
+            <p *ngIf="formGroup.controls.startDate?.errors?.required">Date is required</p>
           </div>
         </td>
         <td>
@@ -51,14 +52,16 @@
             class="form-control mt-4"
             [ngClass]="{
             'is-valid': formGroup.controls.endDate.valid,
-            'is-invalid': formGroup.controls.endDate.invalid && formGroup.controls.endDate.touched
+            'is-invalid': (formGroup.controls.endDate.invalid ||
+            formGroup.hasError('rangeDateValid')) && formGroup.controls.endDate.touched
             }"
             type="time"
             formControlName="endDate"
             min="00:01"
             name="timeEnd">
           <div class="invalid-feedback">
-            Date is required
+            <p *ngIf="formGroup.errors?.rangeDateValid">Start date must be less than the end</p>
+            <p *ngIf="formGroup.controls.endDate?.errors?.required">Date is required</p>
           </div>
         </td>
         <td>
@@ -89,9 +92,12 @@
           </div>
         </td>
       </tr>
-      <tr
-        [settingList]="settingList"
-        app-settings-row class="text-center">
+      <tr app-settings-row *ngFor="let settingsItem of settingList"
+          [settingsItem]="settingsItem"
+          (changeItem)="changeItem($event)"
+          (duplicateItem)="duplicateItem($event)"
+          (removeItem)="removeItem($event)"
+          class="text-center align-middle">
       </tr>
       </tbody>
     </table>

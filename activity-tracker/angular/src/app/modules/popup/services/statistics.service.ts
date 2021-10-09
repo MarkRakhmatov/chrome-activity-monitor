@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {Subject} from "rxjs";
+import {Observable, Subject} from "rxjs";
 import {StatisticInterface} from "../types/statistic.interface";
 
 @Injectable({
@@ -7,7 +7,7 @@ import {StatisticInterface} from "../types/statistic.interface";
 })
 export class StatisticsService {
 
-  statistic = new Subject<StatisticInterface[]>();
+  private statistic$ = new Subject<StatisticInterface[]>();
 
   constructor() {
   }
@@ -22,9 +22,13 @@ export class StatisticsService {
           duration: json[key]
         }
       });
-      this.statistic.next(statistic);
+      this.statistic$.next(statistic);
     });
 
-    return this.statistic;
+    return this.statistic$;
+  }
+
+  getMessage(): Observable<StatisticInterface[]> {
+    return this.statistic$.asObservable();
   }
 }

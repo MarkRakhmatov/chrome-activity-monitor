@@ -1,0 +1,17 @@
+<ng-container *ngFor="let rul of settingList">
+  <td>{{rul.addressUrl}}</td>
+  <td>{{rul.startDate}}</td>
+  <td>{{rul.endDate}}</td>
+  <td>{{rul.dayWeek}}</td>
+  <td>
+    <div class="btn-group-vertical">
+      <button name="change" class="btn btn-primary">Change</button>
+      <button name="duplicate" class="btn btn-secondary">Duplicate</button>
+      <button name="remove" class="btn btn-danger">Remove</button>
+    </div>
+  </td>
+</ng-container>
+
+
+
+

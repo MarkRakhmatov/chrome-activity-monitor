@@ -1,6 +1,5 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {SettingItemInterface} from "../../types/setting-item.interface";
-import {SettingItemLimitedInterface} from "../../types/setting-item-limited";
+import {SettingItemTimeIntervalInterface} from "../../types/setting-item-time-interval";
 
 @Component({
   selector: 'tr[app-settings-row-limited]',
@@ -9,23 +8,23 @@ import {SettingItemLimitedInterface} from "../../types/setting-item-limited";
 })
 export class SettingsRowLimitedComponent {
 
-  @Input() settingsItem: SettingItemLimitedInterface;
+  @Input() settingsItem: SettingItemTimeIntervalInterface;
 
-  @Output() changeItem = new EventEmitter<SettingItemLimitedInterface>();
-  @Output() duplicateItem = new EventEmitter<SettingItemLimitedInterface>();
-  @Output() removeItem = new EventEmitter<SettingItemLimitedInterface>();
+  @Output() changeItem = new EventEmitter<SettingItemTimeIntervalInterface>();
+  @Output() duplicateItem = new EventEmitter<SettingItemTimeIntervalInterface>();
+  @Output() removeItem = new EventEmitter<SettingItemTimeIntervalInterface>();
 
   constructor() {}
 
-  change(rul: SettingItemLimitedInterface) {
+  change(rul: SettingItemTimeIntervalInterface) {
     this.changeItem.emit(rul);
   }
 
-  duplicate(rul: SettingItemLimitedInterface) {
+  duplicate(rul: SettingItemTimeIntervalInterface) {
     this.duplicateItem.emit(rul);
   }
 
-  remove(rul: SettingItemLimitedInterface) {
+  remove(rul: SettingItemTimeIntervalInterface) {
     this.removeItem.emit(rul);
   }
 

@@ -16,12 +16,12 @@
           <div class="form-floating">
               <textarea
                 [ngClass]="{
-                'is-valid': formGroup.controls.addressUrl.valid,
-                'is-invalid': formGroup.controls.addressUrl.invalid && formGroup.controls.addressUrl.touched
+                'is-valid': formGroup.controls.site.valid,
+                'is-invalid': formGroup.controls.site.invalid && formGroup.controls.site.touched
                 }"
                 style="height: 120px;"
                 class="form-control"
-                formControlName="addressUrl"
+                formControlName="site"
                 placeholder="Add new URLs"
                 id="floatingTextarea"></textarea>
             <label for="floatingTextarea">Add new URLs</label>
@@ -34,43 +34,43 @@
           <input
             class="form-control mt-4"
             [ngClass]="{
-            'is-valid': formGroup.controls.startDate.valid,
-            'is-invalid': (formGroup.controls.startDate.invalid ||
-            formGroup.hasError('rangeDateValid')) && formGroup.controls.startDate.touched
+            'is-valid': formGroup.controls.timeStart.valid,
+            'is-invalid': (formGroup.controls.timeStart.invalid ||
+            formGroup.hasError('rangeDateValid')) && formGroup.controls.timeStart.touched
             }"
             type="time"
-            formControlName="startDate"
+            formControlName="timeStart"
             min="00:01"
             name="timeStart"
             required>
           <div class="invalid-feedback">
-            <p *ngIf="formGroup.controls.startDate?.errors?.required">Date is required</p>
+            <p *ngIf="formGroup.controls.timeStart?.errors?.required">Date is required</p>
           </div>
         </td>
         <td>
           <input
             class="form-control mt-4"
             [ngClass]="{
-            'is-valid': formGroup.controls.endDate.valid,
-            'is-invalid': (formGroup.controls.endDate.invalid ||
-            formGroup.hasError('rangeDateValid')) && formGroup.controls.endDate.touched
+            'is-valid': formGroup.controls.timeEnd.valid,
+            'is-invalid': (formGroup.controls.timeEnd.invalid ||
+            formGroup.hasError('rangeDateValid')) && formGroup.controls.timeEnd.touched
             }"
             type="time"
-            formControlName="endDate"
+            formControlName="timeEnd"
             min="00:01"
             name="timeEnd">
           <div class="invalid-feedback">
             <p *ngIf="formGroup.errors?.rangeDateValid">Start date must be less than the end</p>
-            <p *ngIf="formGroup.controls.endDate?.errors?.required">Date is required</p>
+            <p *ngIf="formGroup.controls.timeEnd?.errors?.required">Date is required</p>
           </div>
         </td>
         <td>
           <select
             [ngClass]="{
-            'is-valid': formGroup.controls.dayWeek.valid,
-            'is-invalid': formGroup.controls.dayWeek.invalid && formGroup.controls.dayWeek.touched
+            'is-valid': formGroup.controls.days.valid,
+            'is-invalid': formGroup.controls.days.invalid && formGroup.controls.days.touched
             }"
-            formControlName="dayWeek"
+            formControlName="days"
             class="form-select form-control mt-4"
             aria-label="Select day">
             <option [ngValue]="null" disabled>Choose day</option>

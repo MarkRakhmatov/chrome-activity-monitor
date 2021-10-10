@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {SettingItemInterface} from "../../types/setting-item.interface";
+import {SettingItemPeriodInterface} from "../../types/setting-item-period";
 
 @Component({
   selector: 'tr[app-settings-row]',
@@ -7,23 +7,23 @@ import {SettingItemInterface} from "../../types/setting-item.interface";
   styleUrls: ['./settings-row.component.scss']
 })
 export class SettingsRowComponent {
-  @Input() settingsItem: SettingItemInterface;
+  @Input() settingsItem: SettingItemPeriodInterface;
 
-  @Output() changeItem = new EventEmitter<SettingItemInterface>();
-  @Output() duplicateItem = new EventEmitter<SettingItemInterface>();
-  @Output() removeItem = new EventEmitter<SettingItemInterface>();
+  @Output() changeItem = new EventEmitter<SettingItemPeriodInterface>();
+  @Output() duplicateItem = new EventEmitter<SettingItemPeriodInterface>();
+  @Output() removeItem = new EventEmitter<SettingItemPeriodInterface>();
 
   constructor() {}
 
-  change(rul: SettingItemInterface) {
+  change(rul: SettingItemPeriodInterface) {
     this.changeItem.emit(rul);
   }
 
-  duplicate(rul: SettingItemInterface) {
+  duplicate(rul: SettingItemPeriodInterface) {
     this.duplicateItem.emit(rul);
   }
 
-  remove(rul: SettingItemInterface) {
+  remove(rul: SettingItemPeriodInterface) {
     this.removeItem.emit(rul);
   }
 }

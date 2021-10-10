@@ -5,8 +5,7 @@
     <table class="table table-striped table-bordered">
       <thead>
       <th scope="col">Site</th>
-      <th scope="col">Time Start</th>
-      <th scope="col">Time End</th>
+      <th scope="col">Time Interval</th>
       <th scope="col">Days</th>
       <th scope="col">Actions</th>
       </thead>
@@ -34,34 +33,15 @@
           <input
             class="form-control mt-4"
             [ngClass]="{
-            'is-valid': formGroup.controls.startDate.valid,
-            'is-invalid': (formGroup.controls.startDate.invalid ||
-            formGroup.hasError('rangeDateValid')) && formGroup.controls.startDate.touched
+            'is-valid': formGroup.controls.timeInterval.valid,
+            'is-invalid': formGroup.controls.timeInterval.invalid && formGroup.controls.timeInterval.touched
             }"
             type="time"
-            formControlName="startDate"
+            formControlName="timeInterval"
             min="00:01"
-            name="timeStart"
-            required>
+            name="timeInterval">
           <div class="invalid-feedback">
             <p *ngIf="formGroup.controls.startDate?.errors?.required">Date is required</p>
-          </div>
-        </td>
-        <td>
-          <input
-            class="form-control mt-4"
-            [ngClass]="{
-            'is-valid': formGroup.controls.endDate.valid,
-            'is-invalid': (formGroup.controls.endDate.invalid ||
-            formGroup.hasError('rangeDateValid')) && formGroup.controls.endDate.touched
-            }"
-            type="time"
-            formControlName="endDate"
-            min="00:01"
-            name="timeEnd">
-          <div class="invalid-feedback">
-            <p *ngIf="formGroup.errors?.rangeDateValid">Start date must be less than the end</p>
-            <p *ngIf="formGroup.controls.endDate?.errors?.required">Date is required</p>
           </div>
         </td>
         <td>
@@ -94,7 +74,7 @@
           </div>
         </td>
       </tr>
-      <tr app-settings-row *ngFor="let settingsItem of settingList"
+      <tr app-settings-row-limited *ngFor="let settingsItem of settingList"
           [settingsItem]="settingsItem"
           (changeItem)="changeItem($event)"
           (duplicateItem)="duplicateItem($event)"

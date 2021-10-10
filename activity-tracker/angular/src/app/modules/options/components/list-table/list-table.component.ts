@@ -1,7 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {DAYS_WEEK} from "../../services/date-utils.service";
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
-import {SettingItemInterface} from "../../types/setting-item.interface";
+import {SettingItem, SettingItemInterface} from "../../types/setting-item.interface";
 import {ValidPeriodDate} from "../../../../shared/validators/valid-period-date";
 
 const reg = '(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})[/\\w .-]*/?';
@@ -21,7 +21,7 @@ export class ListTableComponent implements OnInit {
         Validators.pattern(reg)]),
       startDate: new FormControl('', [Validators.required]),
       endDate: new FormControl('', [Validators.required]),
-      dayWeek: new FormControl('', [Validators.required])
+      dayWeek: new FormControl(null, [Validators.required])
     },
     {
       validators: [this.validPeriodDate.validateDateRange()],
@@ -39,20 +39,23 @@ export class ListTableComponent implements OnInit {
     $event.preventDefault();
 
     if (this.formGroup.valid) {
-      this.settingList.push(this.formGroup.value);
+      const item = new SettingItem(this.formGroup.value);
+      this.settingList.push(item);
       this.formGroup.reset();
     }
   }
 
   changeItem($event: SettingItemInterface) {
-
+    this.removeItem($event);
+    this.formGroup.patchValue($event);
   }
 
   duplicateItem($event: SettingItemInterface) {
-
+    const settingItem = new SettingItem($event);
+    this.settingList.push(settingItem);
   }
 
   removeItem($event: SettingItemInterface) {
-    this.settingList = this.settingList.filter(item => item.addressUrl !== $event.addressUrl)
+    this.settingList = this.settingList.filter(item => item.id !== $event.id);
   }
 }

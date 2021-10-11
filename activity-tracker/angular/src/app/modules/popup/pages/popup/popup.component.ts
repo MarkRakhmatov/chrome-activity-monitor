@@ -4,6 +4,8 @@ import {StatisticsService} from "../../services/statistics.service";
 import {StatisticInterface} from "../../types/statistic.interface";
 import {Subject} from "rxjs/internal/Subject";
 import {Observable} from "rxjs";
+import {StorageService} from "../../../options/services/storage.service";
+import {TITLES} from "../../../options/enums/enums";
 
 @Component({
   selector: 'app-popup',
@@ -20,7 +22,7 @@ export class PopupComponent implements OnInit {
 
   ngOnInit(): void {
     this.statisticService.getStatistic();
-    this.statisticService.getMessage().subscribe(value => this.statistic = value)
+    this.statisticService.getMessage().subscribe(value => this.statistic = value);
   }
 
   showStatistic() {

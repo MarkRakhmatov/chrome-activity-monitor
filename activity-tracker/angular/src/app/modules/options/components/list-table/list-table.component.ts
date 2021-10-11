@@ -4,8 +4,8 @@ import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import {ValidPeriodDate} from "../../../../shared/validators/valid-period-date";
 import {StorageService} from "../../services/storage.service";
 import {SettingItemPeriod, SettingItemPeriodInterface} from "../../types/setting-item-period";
-
-const reg = '(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})[/\\w .-]*/?';
+import {SettingItemInterface} from "../../types/setting-item";
+import {REG_EXP_URL} from "../limited-list-table/limited-list-table.component";
 
 @Component({
   selector: 'app-list-table',
@@ -14,12 +14,12 @@ const reg = '(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})[/\\w .-]*/?';
 })
 export class ListTableComponent implements OnInit {
   @Input() title;
+  @Input() settingList: SettingItemInterface[] = [];
   weekDays = DAYS_WEEK;
-  settingList: SettingItemPeriodInterface[] = [];
 
   formGroup = this.fb.group({
       site: new FormControl('', [Validators.required,
-        Validators.pattern(reg)]),
+        Validators.pattern(REG_EXP_URL)]),
       timeStart: new FormControl('', [Validators.required]),
       timeEnd: new FormControl('', [Validators.required]),
       days: new FormControl(null, [Validators.required])
@@ -34,16 +34,16 @@ export class ListTableComponent implements OnInit {
               private storage: StorageService) {
   }
 
-  ngOnInit(): void {
+  ngOnInit() {
   }
 
-  addRules($event) {
+  saveItem($event) {
     $event.preventDefault();
 
     if (this.formGroup.valid) {
-      const item = new SettingItemPeriod(this.formGroup.value);
-      this.settingList.push(item);
-      this.storage.setStorage(this.title, item);
+      const settingItem = new SettingItemPeriod(this.formGroup.value);
+      this.settingList.push(settingItem);
+      this.saveSettingInStorage();
       this.formGroup.reset();
     }
   }
@@ -53,12 +53,19 @@ export class ListTableComponent implements OnInit {
     this.formGroup.patchValue($event);
   }
 
-  duplicateItem($event: SettingItemPeriodInterface) {
-    const settingItem = new SettingItemPeriod($event);
+  duplicateItem({site, days, timeEnd, timeStart}: SettingItemPeriodInterface) {
+    const settingItem = new SettingItemPeriod({site, days, timeEnd, timeStart});
     this.settingList.push(settingItem);
+    this.saveSettingInStorage();
   }
 
   removeItem($event: SettingItemPeriodInterface) {
     this.settingList = this.settingList.filter(item => item.id !== $event.id);
+    this.storage.removeStorageItem(this.title);
+    this.saveSettingInStorage();
+  }
+
+  saveSettingInStorage(): void {
+    this.storage.setStorage(this.title, this.settingList);
   }
 }

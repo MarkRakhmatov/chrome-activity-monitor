@@ -1,3 +1,4 @@
+
 function getHostname(urlString) {
     try {
         return new URL(urlString).hostname;
@@ -470,7 +471,7 @@ class AlertManager {
     }
 
     showAlert(message) {
-        alert(message);
+        window.alert(message);
     }
 
     checkAlert() {

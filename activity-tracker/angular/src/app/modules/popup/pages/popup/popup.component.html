@@ -1,29 +1,24 @@
-<div class="container mb-3 mt-3">
-  <div class="d-flex justify-content-around">
-    <div class="col">
-      <button (click)="showStatistic()" class="btn btn-primary">
-       {{ isShowStatistic ? 'Hide statistics' : 'Show statistics' }}
-      </button>
-    </div>
-    <div class="offset-2 col">
-      <a target="_blank" routerLink="/options" class="btn btn-primary">Settings</a>
-    </div>
-  </div>
-</div>
-
-<div
-  [ngClass]="{'animate': isShowStatistic}"
-  *ngIf="isShowStatistic">
-  <table class="table">
-    <thead>
-    <th>Site</th>
-    <th>Time(hh:mm:ss)</th>
-    </thead>
-    <tbody>
-    <tr *ngFor="let item of statistic">
-      <td>{{item.url}}</td>
-      <td>{{item.duration}}</td>
-    </tr>
-    </tbody>
-  </table>
+<div class="popup">
+  <header class="header">
+    <a target="_blank" routerLink="/options" class="text-decoration-none">All Settings
+      <i class="bi bi-box-arrow-up-right"></i>
+    </a>
+  </header>
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+  <footer class="footer">
+    <ul class="nav nav-pills justify-content-center">
+      <li class="nav-item active">
+        <a class="nav-link" routerLink="./statistic">
+          Statistic <i class="bi bi-bar-chart-fill"></i>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" routerLink="./blockedSites" routerLinkActive="active">
+          Block sites <i class="bi bi-stop-circle-fill"></i>
+        </a>
+      </li>
+    </ul>
+  </footer>
 </div>

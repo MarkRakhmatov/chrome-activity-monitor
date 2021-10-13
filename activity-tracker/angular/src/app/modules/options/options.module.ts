@@ -7,9 +7,10 @@ import {ReactiveFormsModule} from "@angular/forms";
 import { SettingsRowComponent } from './components/settings-row/settings-row.component';
 import { LimitedListTableComponent } from './components/limited-list-table/limited-list-table.component';
 import { SettingsRowLimitedComponent } from './components/settings-row-limited/settings-row-limited.component';
+import { BlackListComponent } from './components/black-list/black-list.component';
 
 @NgModule({
-  declarations: [OptionsComponent, ListTableComponent, SettingsRowComponent, LimitedListTableComponent, SettingsRowLimitedComponent],
+  declarations: [OptionsComponent, ListTableComponent, SettingsRowComponent, LimitedListTableComponent, SettingsRowLimitedComponent, BlackListComponent],
   imports: [CommonModule, OptionsRoutingModule, ReactiveFormsModule]
 })
 export class OptionsModule {}

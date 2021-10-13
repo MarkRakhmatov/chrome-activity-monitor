@@ -3,7 +3,7 @@
   "name": "activity-tracker",
   "short_name": "activity-tracker",
   "version": "1.0.0",
-  "description": "Generated with @larscom/ng-chrome-extension",
+  "description": "Activity tracker",
   "permissions": [
     "tabs",
     "storage",

@@ -2,11 +2,11 @@
     let isStatDisplayed = false;
 
     function showStatistics(stat) {
-        var table = document.getElementById('statisticsTable');
-        var tbodyRef = table.getElementsByTagName('tbody')[0];
-        var statisticsMap = JSON.parse(stat);
-        for (var key in statisticsMap) {
-            var newRow = tbodyRef.insertRow();
+        const table = document.getElementById('statisticsTable');
+        const tbodyRef = table.getElementsByTagName('tbody')[0];
+        const statisticsMap = JSON.parse(stat);
+        for (const key in statisticsMap) {
+            const newRow = tbodyRef.insertRow();
             newRow.insertCell().appendChild(document.createTextNode(key));
             newRow.insertCell().appendChild(document.createTextNode(statisticsMap[key]));
         }
@@ -14,10 +14,10 @@
     }
 
     function hideStatistics() {
-        var table = document.getElementById('statisticsTable');
+        const table = document.getElementById('statisticsTable');
         table.style.display = "none";
-        var tbodyRef = table.getElementsByTagName('tbody')[0];
-        var new_tbody = document.createElement('tbody');
+        const tbodyRef = table.getElementsByTagName('tbody')[0];
+        const new_tbody = document.createElement('tbody');
         tbodyRef.parentNode.replaceChild(new_tbody, tbodyRef);
     }
 
@@ -139,16 +139,15 @@
     </div>
     `;
         document.body.appendChild(modal);
-        let dialog = document.querySelector("dialog[id=StatisticsModalWindow]");
-        dialog.showModal();
+        modal.showModal();
         hideStatistics();
         showStatistics(stat);
         isStatDisplayed = true;
-        dialog.querySelector("button[id=statisticsButton]").addEventListener("click", () => {
+        modal.querySelector("button[id=statisticsButton]").addEventListener("click", () => {
             console.log("MODAL close event");
-            dialog.style.display = "none";
-            dialog.close();
-            dialog.parentNode.removeChild(dialog);
+            modal.style.display = "none";
+            modal.close();
+            modal.parentNode.removeChild(modal);
             isStatDisplayed = false;
         });
     }
@@ -189,8 +188,11 @@
                 console.log("Show statistics!");
                 showModal(request.stat);
             } else if (request.name == "showAccessBlockingMessage") {
+                const style = "font-size: 20px; font-family: Arial, Helvetica, sans-serif; text-align: center; padding-top: 20%;";
+                const styleElem = document.createElement("style")
+                styleElem.innerHTML = style;
                 console.log("show access blocking message!");
-                document.body.style = "font-size: 20px; font-family: Arial, Helvetica, sans-serif; text-align: center; padding-top: 20%;";
+                document.body.appendChild(styleElem);
                 document.body.innerHTML = request.message;
                 document.head.innerHTML = "";
             }

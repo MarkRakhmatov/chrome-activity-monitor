@@ -1,4 +1,3 @@
-
 function getHostname(urlString) {
     try {
         return new URL(urlString).hostname;
@@ -36,9 +35,9 @@ function getWeekDay() {
 }
 
 function getCurrentTimeString() {
-    let currentdate = new Date();
-    return zeroPrefixedNum(currentdate.getHours(), 2) + ":"
-        + zeroPrefixedNum(currentdate.getMinutes(), 2);
+    const currentDate = new Date();
+    return zeroPrefixedNum(currentDate.getHours(), 2) + ":"
+        + zeroPrefixedNum(currentDate.getMinutes(), 2);
 }
 
 function getActiveTab() {
@@ -93,6 +92,11 @@ class StorageWrapper {
 }
 
 class Duration {
+    private readonly hours: number;
+    private readonly minutes: number;
+    private readonly seconds: number;
+    private milliseconds: number;
+
     constructor(milliseconds) {
         const msInSeconds = 1000;
         const msInMinutes = 60 * msInSeconds;
@@ -115,6 +119,10 @@ class Duration {
 }
 
 class Timer {
+    private activeTimeDuration: number;
+    private isActive: boolean;
+    private lastTimePoint: number;
+
     constructor() {
         this.reset();
     }
@@ -170,7 +178,10 @@ class Timer {
 
 // contains info about url hostname, opened tabs and
 class HostTimeData {
-    constructor(tabId) {
+    private timer: Timer;
+    private tabIds: Set<any>;
+
+    constructor(private tabId?) {
         this.timer = new Timer();
         this.timer.start();
         this.tabIds = new Set();
@@ -218,8 +229,19 @@ class HostTimeData {
         this.tabIds.clear();
     }
 }
-
+export interface HostNameToTimeDataInterface {
+    timer: Date,
+    lastHostname: string
+}
 class StatisticsHandler {
+    private hostnameToTimeData: HostNameToTimeDataInterface | {};
+    private lastActiveHostname: string;
+    private lastHostname: string;
+    private currentTab: number;
+    private isDocumentFocused: boolean;
+    private isFullScreen: boolean;
+    private sitesIgnoreList: Set<string>;
+
     constructor() {
         this.hostnameToTimeData = {};
         this.lastHostname = '';
@@ -315,11 +337,9 @@ class StatisticsHandler {
             this.currentTab = tabId;
             this.isDocumentFocused = true;
             this.updateHostTimeData(hostname, tabId);
-        }
-        else if (tabId != this.currentTab) {
+        } else if (tabId != this.currentTab) {
             console.log("Skip focus deactivating - tab is not active!");
-        }
-        else {
+        } else {
             this.isDocumentFocused = false;
             this.deactivateCurrentHost();
         }
@@ -330,8 +350,7 @@ class StatisticsHandler {
             this.currentTab = tabId;
             this.isFullScreen = true;
             this.updateHostTimeData(hostname, tabId);
-        }
-        else {
+        } else {
             this.isFullScreen = false;
         }
     }
@@ -370,7 +389,10 @@ class StatisticsHandler {
     }
 
     getSortedDataMap() {
-        return Object.entries(this.hostnameToTimeData).sort((a, b) => b[1].timer.getElapsedMilliseconds() - a[1].timer.getElapsedMilliseconds());
+        return Object.entries(this.hostnameToTimeData)
+            .sort((a, b) => {
+                return b[1]["timer"].getElapsedMilliseconds() - a[1]["timer"].getElapsedMilliseconds();
+            });
     }
 
     reset() {
@@ -381,6 +403,9 @@ class StatisticsHandler {
 }
 
 class CommunicationHandler {
+    private statisticsHandler: any;
+    private readonly messageHandlers: { fullscreenState: any; getStatistics: any; focusState: any };
+
     constructor(statisticsHandlerRef) {
         this.statisticsHandler = statisticsHandlerRef;
         this.messageHandlers = {
@@ -463,6 +488,10 @@ class CommunicationHandler {
 }
 
 class AlertManager {
+    private alertInfos: any[];
+    private activeAlerts: any[];
+    private dayOfWeek: string;
+
     constructor() {
         this.alertInfos = [];
         this.activeAlerts = [];
@@ -519,10 +548,21 @@ function updateTableRows(tableName, tableData) {
     return tableRows;
 }
 
+export interface RowPeriodInterface {
+    days: string
+    id: number
+    site: string
+    timeEnd: string
+    timeStart: string
+}
+
 class SettingsPeriodTable {
+    private readonly name: any;
+    rows: RowPeriodInterface;
+    private alertManager: AlertManager;
+
     constructor(name) {
         this.name = name;
-        this.rows;
         this.alertManager = new AlertManager();
     }
 
@@ -531,7 +571,7 @@ class SettingsPeriodTable {
             return {inList: false, isActiveRowsEmpty: true};
         }
 
-        let rows = this.getActiveRows(site);
+        let rows = this.getActiveRows();
         if (!rows.length) {
             return {inList: false, isActiveRowsEmpty: true};
         }
@@ -545,11 +585,11 @@ class SettingsPeriodTable {
 
     getActiveRows() {
         let rows = [];
-        let currentTimeofDay = getCurrentTimeString();
+        let currentTimeOfDay = getCurrentTimeString();
         let currentDayOfWeek = getWeekDay();
         for (let [i, row] of Object.entries(this.rows)) {
             if (row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
-                let inList = currentTimeofDay >= row.timeStart && currentTimeofDay < row.timeEnd;
+                let inList = currentTimeOfDay >= row.timeStart && currentTimeOfDay < row.timeEnd;
                 if (inList) {
                     rows.push(row);
                 }
@@ -562,7 +602,7 @@ class SettingsPeriodTable {
         let newRows = updateTableRows(this.name, tableData);
         if (newRows) {
             this.rows = newRows;
-            let alertInfosConverter = (rows) => {
+            let alertInfosConverter = (rows: RowPeriodInterface) => {
                 let alertInfos = [];
                 for (let [i, row] of Object.entries(rows)) {
                     alertInfos.push({time: row.timeStart, days: row.days, message: this.name + ': ' + row.site});
@@ -574,10 +614,19 @@ class SettingsPeriodTable {
     }
 }
 
+export interface RowIntervalInterface {
+    days: string
+    id: number
+    site: string
+    timeInterval: string
+}
+
 class SettingsIntervalTable {
+    private readonly name: any;
+    private rows: RowIntervalInterface;
+
     constructor(name) {
         this.name = name;
-        this.rows;
     }
 
     includes(siteToCheck) {
@@ -590,13 +639,12 @@ class SettingsIntervalTable {
             if (row.days.includes('Every day') || row.days.includes(currentDayOfWeek)) {
                 let sites = row.site.split(/\s|\n|\r/);
                 if (sites.includes(siteToCheck)) {
-                    let timeOnLimitedAccesSites = 0;
+                    let timeOnLimitedAccessSites = 0;
                     for (let site of sites) {
                         let activeTime = eventHandler.statisticsHandler.getActiveTimeForHostname(site);
-                        timeOnLimitedAccesSites += activeTime;
+                        timeOnLimitedAccessSites += activeTime;
                     }
-                    ;
-                    let activeTimeStr = new Duration(timeOnLimitedAccesSites).toString();
+                    let activeTimeStr = new Duration(timeOnLimitedAccessSites).toString();
                     let rowTime = row.timeInterval + ":00";
                     return activeTimeStr > rowTime;
                 }
@@ -614,6 +662,11 @@ class SettingsIntervalTable {
 }
 
 class AccessController {
+    private blackList: SettingsPeriodTable;
+    private whiteList: SettingsPeriodTable;
+    private limitedAccessList: SettingsIntervalTable;
+    private readonly onAccessBlocked: any;
+
     constructor(onAccessBlockedCallback) {
         this.blackList = new SettingsPeriodTable('Black List');
         this.whiteList = new SettingsPeriodTable('White List');
@@ -633,8 +686,7 @@ class AccessController {
         if (!result.isActiveRowsEmpty) {
             if (result.inList) {
                 return false;
-            }
-            else {
+            } else {
                 this.onAccessBlocked({
                     hostname: hostname,
                     reason: `${hostname} does not belong to the list of allowed sites!`
@@ -674,6 +726,11 @@ class AccessController {
 }
 
 class SettingsHandler {
+    private readonly onSettingsUpdate: any;
+    private storageKeys: { limitedAccessList: string; blackList: string; whiteList: string };
+    private storage: StorageWrapper;
+    private readonly onFail: (error) => void;
+
     constructor(onSettingsUpdateCallback) {
         this.onSettingsUpdate = onSettingsUpdateCallback;
         this.storageKeys = {
@@ -709,6 +766,13 @@ class SettingsHandler {
 }
 
 class EventHandler {
+    statisticsHandler: any;
+    private storageKeys: { day: string; statistics: string };
+    private storage: StorageWrapper;
+    private readonly communicationHandler: CommunicationHandler;
+    private accessController: AccessController;
+    private settings: SettingsHandler;
+
     constructor() {
         this.storageKeys = {statistics: 'stat', day: 'day'};
         this.storage = new StorageWrapper();
@@ -724,12 +788,12 @@ class EventHandler {
 
     InitStatistics() {
         this.statisticsHandler = new StatisticsHandler();
-        this.storage.get(this.storageKeys.statistics).then((result) => {
-                if (!result.stat) {
+        this.storage.get(this.storageKeys.statistics).then(({stat}) => {
+                if (!stat) {
                     return;
                 }
-                if (result.stat) {
-                    this.statisticsHandler.initFromSerialMap(result.stat);
+                if (stat) {
+                    this.statisticsHandler.initFromSerialMap(stat);
                 }
             },
             (error) => {
@@ -777,11 +841,12 @@ class EventHandler {
             if (lastDay !== currentDay) {
                 this.onDayChanged();
             }
-            this.storage.set(this.storageKeys.day, getWeekDay()).then(null,
-                () => {
-                    console.warn('Failed to set data to storage.');
-                },
-                (error) => {
+            this.storage.set(this.storageKeys.day, getWeekDay())
+                .then(null,
+                    () => {
+                        console.warn('Failed to set data to storage.');
+                    })
+                .catch((error) => {
                     console.warn("Failed to get statistics from storage " + error.message);
                 });
         };
@@ -802,5 +867,5 @@ class EventHandler {
     }
 }
 
-var eventHandler =  new EventHandler();
+var eventHandler = new EventHandler();
 

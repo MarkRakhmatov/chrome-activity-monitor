@@ -15,8 +15,7 @@ const routes: Routes = [
       whiteList: WhiteListResolver,
       limitedAccessList: LimitedAccessListResolver
     }
-  },
-  {path: 'blackList', component: BlackListComponent}
+  }
 ]
 
 @NgModule({

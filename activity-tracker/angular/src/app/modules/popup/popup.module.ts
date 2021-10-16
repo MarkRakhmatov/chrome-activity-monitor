@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import {CommonModule, HashLocationStrategy, LocationStrategy} from '@angular/common';
 import { NgModule } from '@angular/core';
 import { PopupComponent } from './pages/popup/popup.component';
 import { PopupRoutingModule } from './popup-routing.module';
@@ -7,6 +7,9 @@ import { BlockedSitesComponent } from './components/blocked-sites/blocked-sites.
 
 @NgModule({
   declarations: [PopupComponent, StatisticTableComponent, BlockedSitesComponent],
-  imports: [CommonModule, PopupRoutingModule]
+  imports: [CommonModule, PopupRoutingModule],
+  providers: [
+    { provide: LocationStrategy, useClass: HashLocationStrategy }
+  ],
 })
 export class PopupModule {}

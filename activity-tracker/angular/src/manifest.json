@@ -4,11 +4,13 @@
   "short_name": "activity-tracker",
   "version": "1.0.0",
   "description": "Activity tracker",
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "permissions": [
     "tabs",
     "storage",
     "webRequest",
     "webRequestBlocking",
+    "webNavigation",
     "*://*/*"],
   "browser_action": {
     "default_popup": "index.html?#/popup",

@@ -8,15 +8,14 @@ const routes: Routes = [
   {
     path: '',
     component: PopupComponent,
-  },
-  {
-    path: '', redirectTo: './statistic', pathMatch: 'full'
-  },
-  {
-    path: 'statistic', component: StatisticTableComponent
-  },
-  {
-    path: 'blockedSites', component: BlockedSitesComponent
+    children: [
+      {
+        path: '/statistic', component: StatisticTableComponent
+      },
+      {
+        path: 'blockedSites', component: BlockedSitesComponent
+      }
+    ]
   }
 ];
 

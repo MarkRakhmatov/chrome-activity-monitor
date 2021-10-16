@@ -1,0 +1,36 @@
+<div class="navbar-container bg-light">
+  <nav class="navbar navbar-expand-md navbar-light">
+    <a class="navbar-brand" href="#">Activity Tracker <i class="bi bi-clock"></i></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbar">
+      <ul class="nav nav-pills">
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active"
+             [routerLinkActiveOptions]="{exact: true}"
+             routerLink="/options">Options</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{exact: true}"
+             routerLink="/options/blacklist">Black List</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{exact: true}"
+             routerLink="/options/whitelist">White List</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{exact: true}"
+             routerLink="/options/accessList">Limited Access List</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</div>

@@ -11,6 +11,21 @@ const routes: Routes = [
     path: 'options',
     pathMatch: 'full',
     loadChildren: () => import('./modules/options/options.module').then(m => m.OptionsModule)
+  },
+  {
+    path: 'options/blacklist',
+    pathMatch: 'full',
+    loadChildren: () => import('./modules/options/modules/black-list/black-list.module').then(m => m.BlackListModule)
+  },
+  {
+    path: 'options/whitelist',
+    pathMatch: 'full',
+    loadChildren: () => import('./modules/options/modules/whitelist/whitelist.module').then(m => m.WhitelistModule)
+  },
+  {
+    path: 'options/accessList',
+    pathMatch: 'full',
+    loadChildren: () => import('./modules/options/modules/access-list/access-list.module').then(m => m.AccessListModule)
   }
 ];
 

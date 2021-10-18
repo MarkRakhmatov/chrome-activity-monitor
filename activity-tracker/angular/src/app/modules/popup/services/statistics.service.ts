@@ -1,6 +1,11 @@
 import {Injectable} from '@angular/core';
-import {Observable, Subject} from "rxjs";
+import {fromEventPattern, Observable, ReplaySubject, Subject} from "rxjs";
 import {StatisticInterface} from "../types/statistic.interface";
+import {getMessage} from "@extend-chrome/messages";
+
+export const [sendStatistic, statisticsStream, waitForStatistic] = getMessage(
+  'getStatistics',
+)
 
 @Injectable({
   providedIn: 'root'
@@ -8,12 +13,15 @@ import {StatisticInterface} from "../types/statistic.interface";
 export class StatisticsService {
 
   private statistic$ = new Subject<StatisticInterface[]>();
+  private statistic2$: Observable<any> = statisticsStream;
 
   constructor() {
+    this.getStatistic();
+    this.statistic2$.subscribe(value => console.log(value));
   }
 
 
-  getStatistic(): Subject<StatisticInterface[]> {
+  getStatistic(): void {
     chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) => {
       const json = JSON.parse(response);
       const statistic = Object.keys(json).map(key => {
@@ -22,10 +30,13 @@ export class StatisticsService {
           duration: json[key]
         }
       });
+      sendStatistic(statistic);
       this.statistic$.next(statistic);
     });
+  }
 
-    return this.statistic$;
+  getStat() {
+
   }
 
   getMessage(): Observable<StatisticInterface[]> {

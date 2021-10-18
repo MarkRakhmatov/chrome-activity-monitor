@@ -7,15 +7,7 @@ import {BlockedSitesComponent} from "./components/blocked-sites/blocked-sites.co
 const routes: Routes = [
   {
     path: '',
-    component: PopupComponent,
-    children: [
-      {
-        path: '/statistic', component: StatisticTableComponent
-      },
-      {
-        path: 'blockedSites', component: BlockedSitesComponent
-      }
-    ]
+    component: PopupComponent
   }
 ];
 

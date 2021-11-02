@@ -20,12 +20,15 @@ const routes: Routes = [
   {
     path: 'options/whitelist',
     pathMatch: 'full',
-    loadChildren: () => import('./modules/options/modules/whitelist/whitelist.module').then(m => m.WhitelistModule)
+    loadChildren: () => import('./modules/options/modules/white-list/whitelist.module').then(m => m.WhitelistModule)
   },
   {
     path: 'options/accessList',
     pathMatch: 'full',
     loadChildren: () => import('./modules/options/modules/access-list/access-list.module').then(m => m.AccessListModule)
+  },
+  {
+    path: '**', redirectTo: 'options'
   }
 ];
 

@@ -1,17 +1,28 @@
-<ng-container *ngIf="statistic | async as stat">
-  <div class="animate">
-    <table class="table">
-      <thead>
-      <th>Site</th>
-      <th>Time(hh:mm:ss)</th>
-      </thead>
-      <tbody>
-      <tr *ngFor="let item of stat">
-        <td>{{item.url}}</td>
-        <td>{{item.duration}}</td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
+<ng-container *ngIf="statistic | async as stat; else loading">
+  <ng-container *ngIf="stat.length; else empty">
+    <div class="animate">
+      <table class="table">
+        <thead>
+        <th>Site</th>
+        <th>Time(hh:mm:ss)</th>
+        </thead>
+        <tbody>
+        <tr *ngFor="let item of stat">
+          <td>{{item.url}}</td>
+          <td>{{item.duration}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
 </ng-container>
 
+<ng-template #loading>
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</ng-template>
+
+<ng-template #empty>
+  Not yet statistic.
+</ng-template>

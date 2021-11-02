@@ -27,7 +27,6 @@
     "@angular/platform-browser": "^11.0.2",
     "@angular/platform-browser-dynamic": "^11.0.2",
     "@angular/router": "^11.0.2",
-    "@extend-chrome/messages": "^1.2.2",
     "bootstrap": "^5.1.2",
     "bootstrap-icons": "^1.6.0",
     "rxjs": "~6.6.0",

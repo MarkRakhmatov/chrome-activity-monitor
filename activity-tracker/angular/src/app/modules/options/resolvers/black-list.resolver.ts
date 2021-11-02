@@ -1,13 +1,12 @@
 import {Injectable} from '@angular/core';
 import {
-  Router, Resolve,
+  Resolve,
   RouterStateSnapshot,
   ActivatedRouteSnapshot
 } from '@angular/router';
 import {Observable, of} from 'rxjs';
 import {TITLES} from "../enums/enums";
 import {StorageService} from "../services/storage.service";
-import {map} from "rxjs/operators";
 import {SettingItemInterface} from "../types/setting-item";
 
 @Injectable({

@@ -1,7 +1,6 @@
-import {Component, Inject, Input, OnInit} from '@angular/core';
+import {Component, Inject, OnInit} from '@angular/core';
 import {TAB_ID} from '../../../../providers/tab-id.provider';
 import {StatisticsService} from "../../services/statistics.service";
-import {switchMap} from "rxjs/operators";
 
 @Component({
   selector: 'app-popup',
@@ -9,14 +8,13 @@ import {switchMap} from "rxjs/operators";
   styleUrls: ['popup.component.scss']
 })
 export class PopupComponent implements OnInit {
-  isShowStatistic = true;
-  isShowBlockedSite = false;
+  isShowStatistic = false;
+  isShowBlockedSite = true;
 
   constructor(@Inject(TAB_ID) readonly tabId: number) {
   }
 
   ngOnInit(): void {
-
   }
 
   showStatistic() {

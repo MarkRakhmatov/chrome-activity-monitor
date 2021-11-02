@@ -1,1 +1,33 @@
-<p>blocked-sites works!</p>
+<ng-container *ngIf="blockList | async as blockedList; else loading">
+  <ng-container *ngIf="blockedList.length; else empty">
+    <div class="animate">
+      <table class="table">
+        <thead>
+        <th>Site</th>
+        <th>Days</th>
+        <th>Start</th>
+        <th>End</th>
+        </thead>
+        <tbody>
+        <tr *ngFor="let item of blockedList">
+          <td>{{item.site}}</td>
+          <td>{{item.days}}</td>
+          <td>{{item.timeStart}}</td>
+          <td>{{item.timeEnd}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</ng-container>
+
+<ng-template #loading>
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</ng-template>
+
+<ng-template #empty>
+  Not yet statistic.
+</ng-template>
+

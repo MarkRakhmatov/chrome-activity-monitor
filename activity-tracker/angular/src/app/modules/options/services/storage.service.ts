@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {fromPromise} from "rxjs/internal-compatibility";
 import {Observable} from "rxjs";
-import {SettingItem, SettingItemInterface} from "../types/setting-item";
+import {SettingItemInterface} from "../types/setting-item";
 
 @Injectable({
   providedIn: 'root'

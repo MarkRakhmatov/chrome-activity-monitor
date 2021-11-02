@@ -5,19 +5,19 @@
     </a>
   </header>
   <main class="content">
-    <app-statistic-table *ngIf="isShowStatistic"></app-statistic-table>
-    <app-blocked-sites *ngIf="isShowBlockedSite"></app-blocked-sites>
+    <app-statistic-table [hidden]="isShowBlockedSite"></app-statistic-table>
+    <app-blocked-sites [hidden]="isShowStatistic"></app-blocked-sites>
   </main>
   <footer class="footer">
     <ul class="nav nav-pills justify-content-center">
-      <li class="nav-item active">
-        <a class="nav-link" [ngClass]="{'active': isShowStatistic}" (click)="showStatistic()">
-          Statistic <i class="bi bi-bar-chart-fill"></i>
-        </a>
-      </li>
       <li class="nav-item">
         <a class="nav-link" [ngClass]="{'active': isShowBlockedSite}" (click)="showBlockSites()">
           Block sites <i class="bi bi-stop-circle-fill"></i>
+        </a>
+      </li>
+      <li class="nav-item active">
+        <a class="nav-link" [ngClass]="{'active': isShowStatistic}" (click)="showStatistic()">
+          Statistic <i class="bi bi-bar-chart-fill"></i>
         </a>
       </li>
     </ul>

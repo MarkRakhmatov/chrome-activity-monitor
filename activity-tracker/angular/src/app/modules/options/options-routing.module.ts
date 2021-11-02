@@ -4,7 +4,6 @@ import {OptionsComponent} from './pages/options/options.component';
 import {BlackListResolver} from "./resolvers/black-list.resolver";
 import {WhiteListResolver} from "./resolvers/white-list.resolver";
 import {LimitedAccessListResolver} from "./resolvers/limited-access-list.resolver";
-import {BlackListComponent} from "./components/black-list/black-list.component";
 
 const routes: Routes = [
   {

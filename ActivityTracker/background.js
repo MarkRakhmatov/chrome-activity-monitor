@@ -348,7 +348,9 @@ class CommunicationHandler {
         this.messageHandlers = {
             "focusState" : this.onFocusStateMsg.bind(this),
             "fullscreenState" : this.onFullscreenStateMsg.bind(this),
-            "getStatistics": this.onGetStatisticsMsg.bind(this)};
+            "getStatistics": this.onGetStatisticsMsg.bind(this),
+            "temporaryDisable": this.onTemporaryDisable.bind(this),
+            "isDisabled": this.onIsDisabled.bind(this)};
         chrome.runtime.onMessage.addListener(this.onMessage.bind(this));
     }
     onFocusStateMsg(message, sender, _response) {
@@ -363,6 +365,19 @@ class CommunicationHandler {
     }
     onGetStatisticsMsg(message, sender, response) {
         response(this.statisticsHandler.getFormattedMap());
+    }
+    onTemporaryDisable(message, sender, response) {
+        const timeout = 5*60*1000;
+        window.eventHandler.accessController.deactivated = message.isTemporaryDisabled;
+        if(message.isTemporaryDisabled) {
+            setTimeout(()=>{
+                window.eventHandler.accessController.deactivated = false;
+            }, timeout);
+            response({timeout: timeout});
+        }
+    }
+    onIsDisabled(message, sender, response) {
+        response({isDisabled: window.eventHandler.accessController.deactivated});
     }
     onMessage(message, sender, response) {
         if(!message.name) {
@@ -611,6 +626,7 @@ class SettingsIntervalTable {
 
 class AccessController {
     constructor(onAccessBlockedCallback) {
+        this.deactivated = false;
         this.categories = new SettingsCategories('Categories')
         this.blackList = new SettingsPeriodTable('Black List');
         this.whiteList = new SettingsPeriodTable('White List');
@@ -622,7 +638,7 @@ class AccessController {
             ['blocking']);
     }
     isAccessBlocked(hostname) {
-        if(hostname !== window.eventHandler.statisticsHandler.getLastActiveHostname()) {
+        if(this.deactivated || hostname !== window.eventHandler.statisticsHandler.getLastActiveHostname()) {
             return false;
         }
         let result = this.whiteList.includes(hostname);

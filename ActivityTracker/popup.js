@@ -1,6 +1,16 @@
 'use strict';
 (function(){
 let isStatDisplayed = false;
+let isTemporaryDisabled = false;
+
+function InitCheckboxDisabled() {
+    chrome.runtime.sendMessage(null, {name: "isDisabled"}, {}, (response) => {
+        console.log(response.isDisabled);
+        document.getElementById('temporaryDisable').checked= !response.isDisabled;
+    });
+}
+InitCheckboxDisabled();
+
 function showStatistics() {
     chrome.runtime.sendMessage(null, {name: "getStatistics"}, {}, (response) =>
     {
@@ -47,8 +57,19 @@ function openOptions() {
     }
 }
 
-//An Alarm delay of less than the minimum 1 minute will fire
-// in approximately 1 minute incriments if released
+function temporaryDisable() {
+    isTemporaryDisabled = !isTemporaryDisabled;
+    chrome.runtime.sendMessage(null, {name: "temporaryDisable", isTemporaryDisabled: isTemporaryDisabled}, {}, (response) =>
+    {
+        if(isTemporaryDisabled) {
+            setTimeout(()=>{
+                checkboxElement.setAttribute("checked", false);
+            }, response.timeout);
+        }
+    });
+}
+
 document.getElementById('Statistics').addEventListener('click', toggleStatistics);
 document.getElementById('Settings').addEventListener('click', openOptions);
+document.getElementById('temporaryDisable').addEventListener('click', temporaryDisable);
 })()

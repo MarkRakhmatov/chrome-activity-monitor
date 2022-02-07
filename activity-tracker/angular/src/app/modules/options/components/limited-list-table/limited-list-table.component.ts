@@ -3,6 +3,7 @@ import {DAYS_WEEK} from "../../services/date-utils.service";
 import {FormBuilder, FormControl, Validators} from "@angular/forms";
 import {SettingItemTimeInterval, SettingItemTimeIntervalInterface} from "../../types/setting-item-time-interval";
 import {StorageService} from "../../services/storage.service";
+import { SettingItemInterface } from "../../types/setting-item";
 
 export const REG_EXP_URL = new RegExp("^(((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9]))\s*\n*\r*)+$");
 
@@ -37,7 +38,7 @@ export class LimitedListTableComponent implements OnInit {
     if (this.formGroup.valid) {
       const item = new SettingItemTimeInterval(this.formGroup.value);
       this.settingList.push(item);
-      this.storage.setStorage(this.title, this.settingList);
+      this.storage.setStorage<SettingItemInterface>(this.title, this.settingList);
       this.formGroup.reset();
     }
   }

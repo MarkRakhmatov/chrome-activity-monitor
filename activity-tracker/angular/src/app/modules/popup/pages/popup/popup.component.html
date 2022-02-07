@@ -1,10 +1,19 @@
 <div class="popup">
   <header class="header">
+    <div class="form-check form-switch" title="Turn on or turn off blocking sites">
+      <input (change)="switchExtension()"
+             class="form-check-input"
+             type="checkbox"
+             id="flexSwitchCheckChecked"
+             [checked]="switchState | async">
+      <label class="form-check-label" for="flexSwitchCheckChecked">{{stateExtention}}</label>
+      <span class="timer" *ngIf="timer">{{timer | timer}}</span>
+    </div>
     <a target="_blank" routerLink="/options" class="text-decoration-none">All Settings
       <i class="bi bi-box-arrow-up-right"></i>
     </a>
   </header>
-  <main class="content">
+  <main class="content container-fluid">
     <app-statistic-table [hidden]="isShowBlockedSite"></app-statistic-table>
     <app-blocked-sites [hidden]="isShowStatistic"></app-blocked-sites>
   </main>

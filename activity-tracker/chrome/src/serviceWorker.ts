@@ -229,10 +229,12 @@ class HostTimeData {
         this.tabIds.clear();
     }
 }
+
 export interface HostNameToTimeDataInterface {
     timer: Date,
     lastHostname: string
 }
+
 class StatisticsHandler {
     private hostnameToTimeData: HostNameToTimeDataInterface | {};
     private lastActiveHostname: string;
@@ -404,14 +406,16 @@ class StatisticsHandler {
 
 class CommunicationHandler {
     private statisticsHandler: any;
-    private readonly messageHandlers: { fullscreenState: any; getStatistics: any; focusState: any };
+    private readonly messageHandlers: { fullscreenState: any; getStatistics: any; focusState: any, temporaryDisable: any, isDisabled };
 
     constructor(statisticsHandlerRef) {
         this.statisticsHandler = statisticsHandlerRef;
         this.messageHandlers = {
             "focusState": this.onFocusStateMsg.bind(this),
             "fullscreenState": this.onFullscreenStateMsg.bind(this),
-            "getStatistics": this.onGetStatisticsMsg.bind(this)
+            "getStatistics": this.onGetStatisticsMsg.bind(this),
+            "temporaryDisable": this.onTemporaryDisable.bind(this),
+            "isDisabled": this.onIsDisabled.bind(this)
         };
         chrome.runtime.onMessage.addListener(this.onMessage.bind(this));
     }
@@ -426,6 +430,21 @@ class CommunicationHandler {
         let url = getHostnameOrUrl(message.url);
         console.log('Fullscreen ' + (message.fullscreen === true ? 'on ' : 'off ') + url);
         this.statisticsHandler.handleFullscreenChange(message.fullscreen, url, sender.tab.id);
+    }
+
+    onTemporaryDisable(message, sender, response) {
+        const timeout = 5 * 60 * 1000;
+        eventHandler.accessController.deactivated = message.isTemporaryDisabled;
+        if (message.isTemporaryDisabled) {
+            setTimeout(() => {
+                eventHandler.accessController.deactivated = false;
+            }, timeout);
+            response({timeout: timeout});
+        }
+    }
+
+    onIsDisabled(message, sender, response) {
+        response({isDisabled: eventHandler.accessController.deactivated});
     }
 
     onGetStatisticsMsg(message, sender, response) {
@@ -666,8 +685,10 @@ class AccessController {
     private whiteList: SettingsPeriodTable;
     private limitedAccessList: SettingsIntervalTable;
     private readonly onAccessBlocked: any;
+    deactivated: boolean;
 
     constructor(onAccessBlockedCallback) {
+        this.deactivated = false;
         this.blackList = new SettingsPeriodTable('Black List');
         this.whiteList = new SettingsPeriodTable('White List');
         this.limitedAccessList = new SettingsIntervalTable('Limited Access List');
@@ -679,7 +700,7 @@ class AccessController {
     }
 
     isAccessBlocked(hostname) {
-        if (hostname !== eventHandler.statisticsHandler.getLastActiveHostname()) {
+        if (this.deactivated || hostname !== eventHandler.statisticsHandler.getLastActiveHostname()) {
             return false;
         }
         let result = this.whiteList.includes(hostname);
@@ -770,7 +791,7 @@ class EventHandler {
     private storageKeys: { day: string; statistics: string };
     private storage: StorageWrapper;
     private readonly communicationHandler: CommunicationHandler;
-    private accessController: AccessController;
+    accessController: AccessController;
     private settings: SettingsHandler;
 
     constructor() {

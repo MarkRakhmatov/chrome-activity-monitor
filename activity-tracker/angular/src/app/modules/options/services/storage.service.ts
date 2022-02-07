@@ -11,7 +11,7 @@ export class StorageService {
   constructor() {
   }
 
-  setStorage(key: string, value: SettingItemInterface[]): void {
+  setStorage<T>(key: string, value: T[]): void {
     chrome.storage.local.set({[key]: value});
   }
 
